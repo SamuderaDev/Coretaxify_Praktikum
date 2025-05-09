@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { FaCalendarAlt, FaFilter, FaSearch, FaTimes, FaChevronDown, FaChevronUp } from "react-icons/fa";
 import SideBarEFaktur from './SideBarEFaktur';
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { Button } from "@/components/ui/button";
+import { RoutesApi } from "@/Routes";
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel } from "@/components/ui/alert-dialog";
 
 
@@ -20,8 +22,14 @@ const TambahFakturKeluaran = ({ }) => {
     const [dpp, setDPP] = useState("");
     const [selectedYear, setSelectedYear] = useState(new Date());
     const [informasiTambahan, setInformasiTambahan] = useState("");
+    const [tipe, setTipe] = useState("");
+    const [selectedKode, setSelectedKode] = useState('');
+    const [selectedSatuan, setSelectedSatuan] = useState("");
+    const [listSatuan, setListSatuan] = useState([]);
+    const [listKode, setListKode] = useState([]);
     const [capFasilitas, setCapFasilitas] = useState("");
     const [nomorPendukung, setNomorPendukung] = useState("");
+    const [savedTransaksi, setSavedTransaksi] = useState("");
 
 
     const [isChecked, setIsChecked] = useState(false);
@@ -30,6 +38,36 @@ const TambahFakturKeluaran = ({ }) => {
     const [tarifPPnBM, setTarifPPnBM] = useState("");
     const [ppnBM, setPPnBM] = useState("Rp 0");
     const [isCustomPPnBM, setIsCustomPPnBM] = useState(false);
+
+    const RoutesApi = {
+        kodeTransaksi: "http://127.0.0.1:8000/api/kode-transaksi",
+        satuan: "http://127.0.0.1:8000/api/satuan"
+    };
+
+    const fetchKodeByJenis = async (jenis) => {
+        try {
+            // Fetch kode transaksi
+            const kodeRes = await axios.get(RoutesApi.kodeTransaksi, {
+                params: { jenis }
+            });
+            setListKode(kodeRes.data.data);
+
+            // Fetch satuan
+            const satuanRes = await axios.get(RoutesApi.satuan, {
+                params: { jenis }
+            });
+            setListSatuan(satuanRes.data.data);
+
+        } catch (err) {
+            console.error("Gagal fetch data:", err);
+        }
+    };
+
+    const handleTipeChange = (e) => {
+        const value = e.target.value;
+        setTipe(value);
+        fetchKodeByJenis(value);
+    };
 
     function formatRupiah(value) {
         const numberString = value.replace(/[^0-9]/g, ""); // Hanya angka
@@ -62,7 +100,15 @@ const TambahFakturKeluaran = ({ }) => {
     const handleInformasiTambahanChange = (e) => {
         const selectedInfo = e.target.value;
         setInformasiTambahan(selectedInfo);
-
+        setFormData(prev => ({
+            ...prev,
+            informasiTambahan: selectedInfo,
+            capFasilitas:
+                selectedInfo === "A" ? "X" :
+                    selectedInfo === "B" ? "Y" :
+                        selectedInfo === "C" ? "Z" : "",
+            nomorPendukung: "" // reset ketika berubah
+        }));
         // Atur nilai Cap Fasilitas secara otomatis
         if (selectedInfo === "A") {
             setCapFasilitas("X");
@@ -107,9 +153,14 @@ const TambahFakturKeluaran = ({ }) => {
         }
     };
     const handleKodeTransaksiChange = (event) => {
-        setKodeTransaksi(event.target.value);
-    };
+        const value = event.target.value;
+        setKodeTransaksi(value);
 
+        setFormData(prev => ({
+            ...prev,
+            kodeTransaksi: value,
+        }));
+    };
     useEffect(() => {
         if (kodeTransaksi === "01") {
             setIsChecked(false);
@@ -193,11 +244,172 @@ const TambahFakturKeluaran = ({ }) => {
         setIsChecked(false);
     };
 
+    const [formData, setFormData] = useState({
+        uangMuka: false,
+        pelunasan: false,
+        nomorFaktur: "",
+        kodeTransaksi: "",
+        tanggalFaktur: "",
+        jenisFaktur: "Normal",
+        masaPajak: "",
+        tahun: new Date().getFullYear(),
+        informasiTambahan: "",
+        capFasilitas: "",
+        nomorPendukung: "",
+        referensi: "",
+        alamat: "",
+        idtku: "000000",
+        npwp: "",
+        identification: "",
+        negara: "",
+        nomorDokumen: "",
+        nama: "",
+        email: "",
+        detailTransaksi: [] 
+    });
+
+    const [namaBarang, setNamaBarang] = useState("");
+
+    const handleSimpanTransaksi = () => {
+        // Validate required fields
+        if (!tipe || !selectedKode || !selectedSatuan || !namaBarang || !harga || kuantitas <= 0) {
+            alert("Mohon lengkapi semua data transaksi");
+            return;
+        }
+
+        
+        const newTransaksi = {
+            id: Date.now(), 
+            tipe,
+            nama: namaBarang,
+            kode: selectedKode,
+            satuan: selectedSatuan,
+            harga,
+            kuantitas,
+            totalHarga,
+            potonganHarga,
+            dpp,
+            jumlah,
+            tarifPPN: "12%",
+            ppnNominal: tarifPPN,
+            tarifPPnBM,
+            ppnBM
+        };
+
+        const updatedTransaksi = savedTransaksi ? [...savedTransaksi, newTransaksi] : [newTransaksi];
+        setSavedTransaksi(updatedTransaksi);
+
+        setFormData(prev => ({
+            ...prev,
+            detailTransaksi: updatedTransaksi
+        }));
+
+        setTipe("");
+        setNamaBarang("");
+        setSelectedKode("");
+        setSelectedSatuan("");
+        setHarga("Rp 0");
+        setKuantitas(0);
+        setTotalHarga("Rp 0");
+        setPotonganHarga("Rp 0");
+        setDPP("Rp 0");
+        setJumlah("Rp 0");
+        setTarifPPN("Rp 0");
+        setTarifPPnBM("");
+        setPPnBM("Rp 0");
+        setIsChecked(false);
+        setIsCustomPPnBM(false);
+    };
+
+    const handleHapusTransaksi = (id) => {
+        const updatedTransaksi = savedTransaksi.filter(item => item.id !== id);
+
+        setSavedTransaksi(updatedTransaksi);
+        setFormData(prev => ({
+            ...prev,
+            detailTransaksi: updatedTransaksi
+        }));
+    };
+
+    const handleEditTransaksi = (id) => {
+        const transaksiToEdit = savedTransaksi.find(item => item.id === id);
+
+        if (transaksiToEdit) {
+            setTipe(transaksiToEdit.tipe);
+            setNamaBarang(transaksiToEdit.nama);
+            setSelectedKode(transaksiToEdit.kode);
+            setSelectedSatuan(transaksiToEdit.satuan);
+            setHarga(transaksiToEdit.harga);
+            setKuantitas(transaksiToEdit.kuantitas);
+            setTotalHarga(transaksiToEdit.totalHarga);
+            setPotonganHarga(transaksiToEdit.potonganHarga);
+            setDPP(transaksiToEdit.dpp);
+            setJumlah(transaksiToEdit.jumlah);
+            setTarifPPnBM(transaksiToEdit.tarifPPnBM);
+            setPPnBM(transaksiToEdit.ppnBM);
+
+            handleHapusTransaksi(id);
+        }
+    };
+
+    const handleChange = (e) => {
+        const { name, value, type, checked } = e.target;
+        setFormData((prev) => ({
+            ...prev,
+            [name]: type === "checkbox" ? checked : value,
+        }));
+    };
+    const handleSubmit = (e) => {
+        e.preventDefault();
+
+        // Validasi apakah ada detail transaksi
+        if (!formData.detailTransaksi || formData.detailTransaksi.length === 0) {
+            alert("Mohon tambahkan minimal satu detail transaksi");
+            return;
+        }
+
+        // Hitung total DPP, PPN, dan PPnBM dari semua transaksi
+        const totalDPP = formData.detailTransaksi.reduce((sum, item) => {
+            return sum + (parseInt(item.dpp.replace(/\D/g, ""), 10) || 0);
+        }, 0);
+
+        const totalPPN = formData.detailTransaksi.reduce((sum, item) => {
+            return sum + (parseInt(item.ppnNominal.replace(/\D/g, ""), 10) || 0);
+        }, 0);
+
+        const totalPPnBM = formData.detailTransaksi.reduce((sum, item) => {
+            return sum + (parseInt(item.ppnBM.replace(/\D/g, ""), 10) || 0);
+        }, 0);
+
+        // Tambahkan total ke formData
+        const finalFormData = {
+            ...formData,
+            totalDPP: formatRupiah(totalDPP.toString()),
+            totalPPN: formatRupiah(totalPPN.toString()),
+            totalPPnBM: formatRupiah(totalPPnBM.toString()),
+            totalTagihan: formatRupiah((totalDPP + totalPPN + totalPPnBM).toString())
+        };
+
+        console.log(finalFormData);
+
+    };
+
+    const handleSimpan = () => {
+        const data = {
+            dokumenTransaksi: {
+                uangMuka,
+            }
+        }
+    }
+
     return (
+        console.log(""),
+        console.log("Rendering TambahFakturKeluaran"),
         <div className="flex h-screen bg-gray-100">
             <SideBarEFaktur />
-            <div className='flex-grow p-6 bg-white h-full'>
-                <div className='border rounded-md p-4 mb-2 cursor-pointer flex justify-between items-center bg-gray-100' onClick={() => setShowDokumenTransaksi(!showDokumenTransaksi)}>
+            <div className='flex-grow p-6 bg-white h-full overflow-y-auto'>
+                <h2 className="text-2xl font-semibold text-gray-800 mb-4">Tambah Data</h2>
+                <div className='border rounded-md p-4 mb-2 cursor-pointer flex justify-between items-center bg-gray-100 ' onClick={() => setShowDokumenTransaksi(!showDokumenTransaksi)}>
                     <h3 className='text-lg font-semibold'>Dokumen Transaksi</h3>
                     {showDokumenTransaksi ? <FaChevronUp /> : <FaChevronDown />}
                 </div>
@@ -205,11 +417,11 @@ const TambahFakturKeluaran = ({ }) => {
                     <div className='border rounded-md p-4 mb-2 grid grid-cols-3 gap-4 w-full'>
                         <div className="space-y-2">
                             <label className='block text-sm font-medium'>Uang Muka</label>
-                            <input type="checkbox" className='justify-start p-3 border rounded' />
+                            <input type="checkbox" name="uangMuka" checked={formData.uangMuka} onChange={handleChange} className='justify-start p-3 border rounded' />
                         </div>
                         <div className="space-y-2">
                             <label className='block text-sm font-medium'>Pelunasan</label>
-                            <input type="checkbox" className='justify-start p-3 border rounded' />
+                            <input type="checkbox" name='pelunasan' checked={formData.pelunasan} onChange={handleChange} className='justify-start p-3 border rounded' />
                         </div>
                         <div className='space-y-2'>
                             <label className='block text-sm font-medium'>Nomor Faktur</label>
@@ -218,7 +430,8 @@ const TambahFakturKeluaran = ({ }) => {
                         <div className='space-y-2'>
                             <label className='block text-sm font-medium'>Kode Transaksi</label>
                             <select className='p-2 border rounded w-full'
-                                value={kodeTransaksi}
+                                name="kodeTransaksi"
+                                value={formData.kodeTransaksi}
                                 onChange={handleKodeTransaksiChange} >
                                 <option value="">Pilih Kode Transaksi</option>
                                 <option value="01">01 -  kepada selain pemungut PPN</option>
@@ -236,104 +449,118 @@ const TambahFakturKeluaran = ({ }) => {
                         </div>
                         <div className='space-y-2'>
                             <label className='block text-sm font-medium'>Tanggal Faktur</label>
-                            <input type="date" className='p-2 border rounded w-full' />
+                            <input type="date" value={formData.tanggalFaktur} onChange={handleChange} name='tanggalFaktur' className='p-2 border rounded w-full' />
                         </div>
                         <div className='space-y-2'>
                             <label className="block text-sm font-medium">Jenis Faktur</label>
-                            <input type="text" value="Normal" className='p-2 border rounded w-full bg-gray-100' disabled />
+                            <input type="text" value="Normal" name='jenisFaktur' className='p-2 border rounded w-full bg-gray-100' disabled />
                         </div>
-                        <div className='space-y-2'>
-                            <label className='block text-sm font-medium'>Masa Pajak</label>
-                            {/* <input type="month" className='p-2 border rounded w-full' /> */}
-                            <select className='p-2 border rounded w-full'>
-                                <option value="Januari">Januari</option>
-                                <option value="Februari">Februari</option>
-                                <option value="Maret">Maret</option>
-                                <option value="April">April</option>
-                                <option value="Mei">Mei</option>
-                                <option value="Juni">Juni</option>
-                                <option value="Juli">Juli</option>
-                                <option value="Agustus">Agustus</option>
-                                <option value="September">September</option>
-                                <option value="Oktober">Oktober</option>
-                                <option value="November">November</option>
-                                <option value="Desember">Desember</option>
-                            </select>
-                        </div>
-                        {(kodeTransaksi === "07" || kodeTransaksi === "08") && (
-                            <>
-                                {/* Informasi Tambahan */}
-                                <div className='space-y-2'>
-                                    <label className='block text-sm font-medium'>Informasi Tambahan</label>
-                                    <select
-                                        className='p-2 border rounded w-full'
-                                        value={informasiTambahan}
-                                        onChange={handleInformasiTambahanChange}
-                                    >
-                                        <option value="">Pilih Informasi Tambahan</option>
-                                        <option value="A">Informasi A</option>
-                                        <option value="B">Informasi B</option>
-                                        <option value="C">Informasi C</option>
-                                    </select>
-                                </div>
-
-                                {/* Cap Fasilitas (Disabled) */}
-                                <div className='space-y-2'>
-                                    <label className='block text-sm font-medium'>Cap Fasilitas</label>
-                                    <select
-                                        className='p-2 border rounded w-full bg-gray-100'
-                                        value={capFasilitas}
-                                        disabled
-                                    >
-                                        <option value="">Pilih Cap Fasilitas</option>
-                                        <option value="X">Fasilitas X</option>
-                                        <option value="Y">Fasilitas Y</option>
-                                        <option value="Z">Fasilitas Z</option>
-                                    </select>
-                                </div>
-
-                                {/* Nomor Pendukung (Muncul hanya untuk Informasi A atau B) */}
-                                {(informasiTambahan === "A" || informasiTambahan === "B") && (
-                                    <div className='space-y-2'>
-                                        <label className='block text-sm font-medium'>Nomor Pendukung</label>
-                                        <input
-                                            type="text"
-                                            className='p-2 border rounded w-full'
-                                            placeholder="Masukkan Nomor Pendukung"
-                                            value={nomorPendukung}
-                                            onChange={(e) => setNomorPendukung(e.target.value)}
+                        <div className="col-span-3 grid grid-cols-3 gap-4">
+                            <div className='space-y-2'>
+                                <label className='block text-sm font-medium'>Masa Pajak</label>
+                                {/* <input type="month" className='p-2 border rounded w-full' /> */}
+                                <select className='p-2 border rounded w-full' name='masaPajak' value={formData.masaPajak} onChange={handleChange}>
+                                    <option value="">Pilih Masa Pajak</option>
+                                    <option value="Januari">Januari</option>
+                                    <option value="Februari">Februari</option>
+                                    <option value="Maret">Maret</option>
+                                    <option value="April">April</option>
+                                    <option value="Mei">Mei</option>
+                                    <option value="Juni">Juni</option>
+                                    <option value="Juli">Juli</option>
+                                    <option value="Agustus">Agustus</option>
+                                    <option value="September">September</option>
+                                    <option value="Oktober">Oktober</option>
+                                    <option value="November">November</option>
+                                    <option value="Desember">Desember</option>
+                                </select>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="block text-sm font-medium">Tahun</label>
+                                <Popover className="w-full p-2">
+                                    <PopoverTrigger asChild >
+                                        <Button variant="outline" className="w-full justify-start ">
+                                            {selectedYear.getFullYear()}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent align="start" className="w-auto p-0">
+                                        <DatePicker
+                                            selected={selectedYear}
+                                            onChange={(date) => setSelectedYear(date)}
+                                            showYearPicker
+                                            dateFormat="yyyy"
+                                            className="border p-2 rounded-md w-full text-center"
                                         />
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+                            {/* <div className="space-y-2">
+                                <label className='block text-sm font-medium'></label>
+                            </div> */}
+                            {(kodeTransaksi === "07" || kodeTransaksi === "08") && (
+                                <>
+                                    {/* Informasi Tambahan */}
+                                    <div className='space-y-2'>
+                                        <label className='block text-sm font-medium'>Informasi Tambahan</label>
+                                        <select
+                                            className='p-2 border rounded w-full'
+                                            value={informasiTambahan}
+                                            onChange={handleInformasiTambahanChange}
+                                        >
+                                            <option value="">Pilih Informasi Tambahan</option>
+                                            <option value="A">Informasi A</option>
+                                            <option value="B">Informasi B</option>
+                                            <option value="C">Informasi C</option>
+                                        </select>
                                     </div>
-                                )}
-                            </>
-                        )}
 
-                        <div className="space-y-2">
-                            <label className="block text-sm font-medium">Tahun</label>
-                            <Popover className="w-full p-2">
-                                <PopoverTrigger asChild >
-                                    <Button variant="outline" className="w-full justify-start ">
-                                        {selectedYear.getFullYear()}
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent align="start" className="w-auto p-0">
-                                    <DatePicker
-                                        selected={selectedYear}
-                                        onChange={(date) => setSelectedYear(date)}
-                                        showYearPicker
-                                        dateFormat="yyyy"
-                                        className="border p-2 rounded-md w-full text-center"
-                                    />
-                                </PopoverContent>
-                            </Popover>
+                                    {/* Cap Fasilitas (Disabled) */}
+                                    <div className='space-y-2'>
+                                        <label className='block text-sm font-medium'>Cap Fasilitas</label>
+                                        <select
+                                            className='p-2 border rounded w-full bg-gray-100'
+                                            value={capFasilitas}
+                                            disabled
+                                        >
+                                            <option value="">Pilih Cap Fasilitas</option>
+                                            <option value="X">Fasilitas X</option>
+                                            <option value="Y">Fasilitas Y</option>
+                                            <option value="Z">Fasilitas Z</option>
+                                        </select>
+                                    </div>
+
+                                    {/* Nomor Pendukung (Muncul hanya untuk Informasi A atau B) */}
+                                    {(informasiTambahan === "A" || informasiTambahan === "B") && (
+                                        <div className='space-y-2'>
+                                            <label className='block text-sm font-medium'>Nomor Pendukung</label>
+                                            <input
+                                                type="text"
+                                                name="nomorPendukung"
+                                                className='p-2 border rounded w-full'
+                                                placeholder="Masukkan Nomor Pendukung"
+                                                value={formData.nomorPendukung}
+                                                onChange={(e) => {
+                                                    const value = e.target.value;
+                                                    setNomorPendukung(value);
+                                                    setFormData(prev => ({
+                                                        ...prev,
+                                                        nomorPendukung: value
+                                                    }));
+                                                }}
+                                            />
+                                        </div>
+                                    )}
+                                </>
+                            )}
                         </div>
+
                         <div className='space-y-2'>
                             <label className='block text-sm font-medium'>Referensi</label>
-                            <input type="text" className='p-2 border rounded w-full' />
+                            <input type="text" value={formData.referensi} name="referensi" onChange={handleChange} className='p-2 border rounded w-full' />
                         </div>
                         <div className='space-y-2'>
                             <label className='block text-sm font-medium'>Pilih Alamat</label>
-                            <input type="text" className='p-2 border rounded w-full' placeholder='Link Bang, tanya pm jan tanya saia' disabled />
+                            <input type="text" name="alamat" value={formData.alamat} onChange={handleChange} className='p-2 border rounded w-full' placeholder='Link Bang, tanya pm jan tanya saia' disabled />
                         </div>
                         <div className='space-y-2'>
                             <label className='block text-sm font-medium'>IDTKU</label>
@@ -349,52 +576,50 @@ const TambahFakturKeluaran = ({ }) => {
                     <div className='border rounded-md p-4 mb-2 grid grid-cols-3 gap-4 w-full'>
                         <div className='space-y-2'>
                             <label className='block text-sm font-medium'>NPWP </label>
-                            <input type="text" className='p-2 border rounded w-full' />
+                            <input type="text" name='npwp' value={formData.npwp} onChange={handleChange} className='p-2 border rounded w-full' />
                         </div>
                         <div className='space-y-2'>
                             <label className='block text-sm font-medium'>ID</label>
                             <div className='grid grid-cols-2 gap-3 '>
-                                <div className='flex items-center gap-2'>
-                                    <input type="radio" name="identification" className='w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600' value="NPWP" />
-                                    <label className='text-sm'>NPWP</label>
-                                </div>
-                                <div className='flex items-center gap-2'>
-                                    <input type="radio" name="identification" className='w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600' value="Paspor" />
-                                    <label className='text-sm'>Paspor</label>
-                                </div>
-                                <div className='flex items-center gap-2'>
-                                    <input type="radio" name="identification" className='w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600' value="NIK" />
-                                    <label className='text-sm'>NIK</label>
-                                </div>
-                                <div className='flex items-center gap-2'>
-                                    <input type="radio" name="identification" className='w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600' value="Identitas Lain" />
-                                    <label className='text-sm'>Identitas Lain</label>
-                                </div>
+                                {['NPWP', 'Paspor', 'NIK', 'Identitas Lain'].map((value) => (
+                                    <div key={value} className='flex items-center gap-2'>
+                                        <input
+                                            type="radio"
+                                            name="identification"
+                                            value={value}
+                                            checked={formData.identification === value}
+                                            onChange={handleChange}
+                                            className='w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500'
+                                        />
+                                        <label className='text-sm'>{value}</label>
+                                    </div>
+                                ))}
                             </div>
+
                         </div>
                         <div className='space-y-2'>
                             <label className='block text-sm font-medium'>Negara</label>
-                            <input type="text" className='p-2 border rounded w-full' />
+                            <input type="text" name='negara' value={formData.negara} onChange={handleChange} className='p-2 border rounded w-full' />
                         </div>
                         <div className='space-y-2'>
                             <label className='block text-sm font-medium'>Nomor Dokumen</label>
-                            <input type="text" className='p-2 border rounded w-full bg-gray-100' disabled />
+                            <input type="text" name='nomorDokumen' value={formData.nomorDokumen} onChange={handleChange} className='p-2 border rounded w-full bg-gray-100' disabled />
                         </div>
                         <div className='space-y-2'>
                             <label className='block text-sm font-medium'>Nama</label>
-                            <input type="text" className='p-2 border rounded w-full' />
+                            <input type="text" name='nama' value={formData.nama} onChange={handleChange} className='p-2 border rounded w-full' />
                         </div>
                         <div className='space-y-2'>
                             <label className='block text-sm font-medium'>Alamat</label>
-                            <input type="text" className='p-2 border rounded w-full' disabled placeholder='Ngelink kang' />
+                            <input type="text" name='alamat' value={formData.alamat} onChange={handleChange} className='p-2 border rounded w-full' disabled placeholder='Ngelink kang' />
                         </div>
                         <div className='space-y-2'>
                             <label className='block text-sm font-medium'>IDTKU</label>
-                            <input type="text" className='p-2 border rounded w-full bg-gray-100' value="000000" />
+                            <input type="text" name='idtku' value={formData.idtku} onChange={handleChange} className='p-2 border rounded w-full bg-gray-100' />
                         </div>
                         <div className='space-y-2'>
                             <label className='block text-sm font-medium'>Email</label>
-                            <input type="text" className='p-2 border rounded w-full' />
+                            <input type="text" name='email' value={formData.email} onChange={handleChange} className='p-2 border rounded w-full' />
                         </div>
                     </div>
                 )}
@@ -424,35 +649,76 @@ const TambahFakturKeluaran = ({ }) => {
                                                 <label className="block text-sm font-medium">Tipe</label>
                                                 <div className="grid grid-cols-2 gap-3">
                                                     <div className="flex items-center gap-2">
-                                                        <input type="radio" name="identification" className="w-4 h-4" value="Barang" />
-                                                        <label className="text-sm">Barang</label>
+                                                        <label className="flex items-center gap-2">
+                                                            <input
+                                                                type="radio"
+                                                                name="tipe"
+                                                                value="Barang"
+                                                                checked={tipe === "Barang"}
+                                                                onChange={handleTipeChange}
+                                                            />
+                                                            Barang
+                                                        </label>
                                                     </div>
                                                     <div className="flex items-center gap-2">
-                                                        <input type="radio" name="identification" className="w-4 h-4" value="Jasa" />
-                                                        <label className="text-sm">Jasa</label>
+                                                        <label className="flex items-center gap-2">
+                                                            <input
+                                                                type="radio"
+                                                                name="tipe"
+                                                                value="Jasa"
+                                                                checked={tipe === "Jasa"}
+                                                                onChange={handleTipeChange}
+                                                            />
+                                                            Jasa
+                                                        </label>
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className="space-y-2">
-                                                <label className="block text-sm font-medium">Kode</label>
-                                                <select className='p-2 border rounded w-full'>
-                                                    <option value="Kode 1">Kode 1</option>
-                                                    <option value="Kode 2">Kode 2</option>
-                                                    <option value="Kode 3">Kode 3</option>
-                                                </select>
-                                            </div>
+                                            {tipe && (
+                                                <div>
+                                                    <label className="block text-sm font-medium">Kode Transaksi</label>
+                                                    <select
+                                                        className="p-2 border rounded w-[250px] max-w-full"
+                                                        value={selectedKode}
+                                                        onChange={(e) => setSelectedKode(e.target.value)}
+                                                    >
+                                                        <option value="">Pilih Kode Transaksi</option>
+                                                        {listKode.map(item => (
+                                                            <option key={item.id} value={item.kode}>
+                                                                {item.kode} - {item.nama_transaksi}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            )}
+
                                             <div className="space-y-2">
                                                 <label className="block text-sm font-medium">Nama </label>
-                                                <input type="text" className="p-2 border rounded w-full" />
+                                                <input
+                                                    type="text"
+                                                    className="p-2 border rounded w-full"
+                                                    value={namaBarang}
+                                                    onChange={(e) => setNamaBarang(e.target.value)}
+                                                    placeholder="Masukkan nama barang/jasa"
+                                                />
                                             </div>
-                                            <div className='space-y-2'>
-                                                <label className='block text-sm font-medium'>Satuan</label>
-                                                <select className='p-2 border rounded w-full'>
-                                                    <option value="Satuan 1">Satuan 1</option>
-                                                    <option value="Satuan 2">Satuan 2</option>
-                                                    <option value="Satuan 3">Satuan 3</option>
-                                                </select>
-                                            </div>
+                                            {tipe && (
+                                                <div className='space-y-2'>
+                                                    <label className='block text-sm font-medium'>Satuan</label>
+                                                    <select
+                                                        className="p-2 border rounded w-[250px] max-w-full"
+                                                        value={selectedSatuan}
+                                                        onChange={(e) => setSelectedSatuan(e.target.value)}
+                                                    >
+                                                        <option value="">Pilih Satuan</option>
+                                                        {listSatuan.map(item => (
+                                                            <option key={item.id} value={item.satuan}>
+                                                                {item.satuan}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            )}
                                             <div className="space-y-2">
                                                 <label className="block text-sm font-medium">Harga Satuan</label>
                                                 <input
@@ -470,8 +736,9 @@ const TambahFakturKeluaran = ({ }) => {
                                                     className="p-2 border rounded w-full"
                                                     min="0"
                                                     step="1"
-                                                    value={kuantitas}
+                                                    value={kuantitas === 0 ? '' : kuantitas}
                                                     onChange={handleKuantitasChange}
+                                                    placeholder="0"
                                                 />
                                             </div>
                                             <div className="space-y-2">
@@ -511,7 +778,7 @@ const TambahFakturKeluaran = ({ }) => {
                                                 />
                                             </div>
                                             <div className="space-y-2">
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex items-center gap-2 ">
                                                     <input
                                                         type="checkbox"
                                                         className="justify-start p-3 border rounded"
@@ -528,7 +795,10 @@ const TambahFakturKeluaran = ({ }) => {
                                                     <label className="block text-sm font-medium"></label>
                                                     <input
                                                         type="text"
-                                                        className="p-2 border rounded w-full bg-gray-100"
+                                                        className={`
+                                                            p-2 border rounded w-full
+                                                            ${isChecked ? '' : 'bg-gray-100'}
+                                                        `}
                                                         value={jumlah}
                                                         onChange={handleJumlahChange}
                                                         disabled={!isChecked}
@@ -579,12 +849,12 @@ const TambahFakturKeluaran = ({ }) => {
                                     </div>
                                     <AlertDialogFooter className="flex justify-end mt-6 space-x-2">
                                         <AlertDialogCancel className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600">Batal</AlertDialogCancel>
-                                        <AlertDialogAction className="bg-blue-900 text-white px-4 py-2 rounded-md hover:bg-blue-950">Simpan</AlertDialogAction>
+                                        <AlertDialogAction className="bg-blue-900 text-white px-4 py-2 rounded-md hover:bg-blue-950" onClick={handleSimpanTransaksi}>Simpan</AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
                         </div>
-                        <div className=" w-[1050px] overflow-x-auto bg-white shadow-md rounded-lg overflow-hidden ">
+                        <div className=" w-auto overflow-x-auto bg-white shadow-md rounded-lg overflow-hidden ">
                             <table className="table-auto border border-gray-300 overflow-hidden">
                                 <thead>
                                     <tr>
@@ -608,21 +878,49 @@ const TambahFakturKeluaran = ({ }) => {
                                     </tr>
                                 </thead>
                                 <tbody className="text-gray-600">
-                                    <tr>
+                                    {savedTransaksi && savedTransaksi.length > 0 ? (
+                                        savedTransaksi.map((item, index) => (
+                                            <tr key={item.id} className={index % 2 === 0 ? "bg-gray-100" : ""}>
+                                                <td className="px-1 py-2 border">{index + 1}</td>
+                                                <td className="px-1 py-2 border">
+                                                    <input type="checkbox" className="w-4 h-4" />
+                                                </td>
+                                                <td className="px-1 py-2 border">
+                                                    <button
+                                                        className="bg-blue-500 hover:bg-blue-600 text-white py-1 px-2 rounded text-xs"
+                                                        onClick={() => handleEditTransaksi(item.id)}
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                    <button
+                                                        className="bg-red-500 hover:bg-red-600 text-white py-1 px-2 rounded text-xs ml-1"
+                                                        onClick={() => handleHapusTransaksi(item.id)}
+                                                    >
+                                                        Hapus
+                                                    </button>
+                                                </td>
+
+                                                <td className="px-2 py-2 border">{item.tipe}</td>
+                                                <td className="px-2 py-2 border">{item.nama}</td>
+                                                <td className="px-2 py-2 border">{item.kode}</td>
+                                                <td className="px-2 py-2 border">{item.kuantitas}</td>
+                                                <td className="px-2 py-2 border">{item.satuan}</td>
+                                                <td className="px-2 py-2 border">{item.harga}</td>
+                                                <td className="px-2 py-2 border">{item.totalHarga}</td>
+                                                <td className="px-2 py-2 border">{item.potonganHarga}</td>
+                                                <td className="px-2 py-2 border">{item.tarifPPN}</td>
+                                                <td className="px-2 py-2 border">{item.ppnNominal}</td>
+                                                <td className="px-2 py-2 border">{item.dpp}</td>
+                                                <td className="px-2 py-2 border">{item.jumlah}</td>
+                                                <td className="px-2 py-2 border">{item.ppnBM}</td>
+                                                <td className="px-2 py-2 border">{item.tarifPPnBM}</td>
+                                            </tr>
+                                        ))
+                                    ) : (
                                         <tr>
-                                            <td colSpan="10" className="text-center p-4 border">Belum ada data</td>
+                                            <td colSpan="17" className="text-center p-4 border">Belum ada data</td>
                                         </tr>
-                                    </tr>
-                                    {/* <tr className="bg-gray-100">
-                                        <td className="px-1 py-4 border">
-                                            <button className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-2 rounded">Edit</button>
-                                            <button className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-2 rounded ml-2">Lihat</button>
-                                        </td>
-                                        <td className="px-4 py-4 border">1234567890</td>
-                                        <td className="px-4 py-4 border">Jenis Tempat Kegiatan Usaha</td>
-                                        <td className="px-4 py-4 border">Nama Tempat Kegiatan Usaha</td>
-                                        <td className="px-4 py-4 border">Kode KLU Tempat Kegiatan Usaha</td>
-                                    </tr> */}
+                                    )}
                                 </tbody>
                             </table>
 
@@ -631,7 +929,7 @@ const TambahFakturKeluaran = ({ }) => {
                 )}
                 <div className="flex justify-end mt-4 gap-3">
                     <button className="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded">Batal</button>
-                    <button className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded">Simpan</button>
+                    <button onClick={handleSubmit} className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded">Simpan</button>
                 </div>
             </div>
         </div>

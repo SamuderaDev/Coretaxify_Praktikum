@@ -2,16 +2,16 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useUserType } from '../../../context/UserTypeContext';
 
-const SideBarEFaktur = () => {
+const SideBarSPT = () => {
     const { userType } = useUserType();
     const location = useLocation(); // ambil path sekarang
     const userTypeId = userType === "Orang Pribadi" ? 1 : 2;
 
     const efakturItems = [
-        "Pajak Keluaran",
-        "Pajak Masukan",
-        "Retur Pajak Keluaran",
-        "Retur Pajak Masukan",
+        "SPT Menunggu Pembayaran",
+        "SPT Dilaporkan",
+        "SPT Ditolak",
+        "SPT Dibatalkan ",
     ];
 
     const dokumenLainItems = [
@@ -32,16 +32,16 @@ const SideBarEFaktur = () => {
             </div>
             <nav>
                 <ul className='space-y-1'>
-                    <li
+                    {/* <li
                         className={`p-2 rounded-md cursor-pointer ${isDashboard ? "bg-blue-700 text-white" : "hover:bg-blue-700 hover:text-white"
                             }`}
                     >
                         <Link to={dashboardPath} className="block w-full p-2">
                             <strong>Dashboard</strong>
                         </Link>
-                    </li>
+                    </li> */}
 
-                    <li className="font-bold text-lg mt-4 mb-2 text-start">e-Faktur</li>
+                    <li className="font-bold text-lg mt-4 mb-2 text-start">Surat Pemberitahuan (SPT)</li>
                     {efakturItems.map((item, index) => {
                         const formattedItem = item.replace(/ /g, "-").toLowerCase();
                         const path = `/admin/praktikum/${userTypeId}/e-faktur/${formattedItem}`;
@@ -60,7 +60,7 @@ const SideBarEFaktur = () => {
                         );
                     })}
 
-                    <li className="font-bold text-lg mt-4 mb-2">Dokumen Lain</li>
+                    {/* <li className="font-bold text-lg mt-4 mb-2">Dokumen Lain</li>
                     {dokumenLainItems.map((item, index) => {
                         const formattedItem = item.replace(/ /g, "-").toLowerCase();
                         const path = `/admin/praktikum/${userTypeId}/e-faktur/dokumen-lain/${formattedItem}`;
@@ -77,11 +77,11 @@ const SideBarEFaktur = () => {
                                 </Link>
                             </li>
                         );
-                    })}
+                    })} */}
                 </ul>
             </nav>
         </aside>
     );
 };
 
-export default SideBarEFaktur;
+export default SideBarSPT;

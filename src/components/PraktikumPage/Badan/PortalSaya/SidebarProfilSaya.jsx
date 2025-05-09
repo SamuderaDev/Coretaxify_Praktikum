@@ -1,10 +1,11 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useUserType } from '../../../context/userTypeContext';
 
 const SidebarProfilSayaBadan = () => {
     const { userType } = useUserType();
     const userTypeId = userType === "Orang Pribadi" ? 1 : 2;
+    const location = useLocation();
 
     const menuItems = [
         "Ikhtisar Profil Wajib Pajak",
@@ -29,8 +30,8 @@ const SidebarProfilSayaBadan = () => {
     return (
         <aside className="w-1/6 text-blue-900 px-5 py-5 h-screen bg-white">
             <div className="mb-5 bg-blue-900 text-white p-2 text-center">
-                <h2 className="text-lg font-bold mb-5">3510145907990002</h2> {/* Dari akun yang login */}
-                <h3 className="text-md font-semibold mb-5">PUTRI NURIL WULANATINING ASIH</h3> {/* Dari akun yang login */}
+                <h2 className="text-lg font-bold mb-5">3510145907990002</h2>
+                <h3 className="text-md font-semibold mb-5">PUTRI NURIL WULANATINING ASIH</h3>
             </div>
 
             <nav>
@@ -41,8 +42,14 @@ const SidebarProfilSayaBadan = () => {
                             ? `/admin/praktikum/${userTypeId}/profil-saya`
                             : `/admin/praktikum/${userTypeId}/profil-saya/${formattedItem}`;
 
+                        const isActive = location.pathname === linkPath;
+
                         return (
-                            <li key={index} className="p-2 hover:bg-blue-700 hover:text-white rounded-md cursor-pointer">
+                            <li
+                                key={index}
+                                className={`p-2 rounded-md cursor-pointer ${isActive ? "bg-blue-700 text-white" : "hover:bg-blue-700 hover:text-white"
+                                    }`}
+                            >
                                 <Link to={linkPath} className="block w-full p-2">
                                     {item}
                                 </Link>

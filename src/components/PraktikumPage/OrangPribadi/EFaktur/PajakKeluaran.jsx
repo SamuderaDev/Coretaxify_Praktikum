@@ -46,22 +46,22 @@ const PajakKeluaranOP = () => {
                                         >
                                             Download Template
                                         </a>
-                                        <a
-                                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                                        <button
+                                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
                                         >
                                             Import Dokumen
-                                        </a>
+                                        </button>
                                     </div>
                                 </div>
                             )}
                         </div>
 
-                        <button
+                        {/* <button
                             className="flex items-center bg-blue-900 hover:bg-blue-950 text-white font-bold py-2 px-2 rounded text-sm"
                             onClick={() => window.location.href = "/admin/praktikum/2/e-faktur/pajak-keluaran/tambah-faktur-keluaran"}
                         >
                             Tambah
-                        </button>
+                        </button> */}
                     </div>
                     <div className="flex items-center gap-3">
                         <button className='flex items-center bg-blue-900 hover:bg-blue-950 text-white font-bold py-2 px-2 rounded text-sm'>
@@ -73,7 +73,7 @@ const PajakKeluaranOP = () => {
                     </div>
                 </div>
 
-                <div className="w-[1100px] overflow-x-auto bg-white shadow-md rounded-lg overflow-hidden mt-4">
+                <div className="w-auto overflow-x-auto bg-white shadow-md rounded-lg overflow-hidden mt-4">
                     <table className="table-auto border border-gray-300 w-full">
                         <thead className="bg-gray-200">
                             <tr>
@@ -91,7 +91,7 @@ const PajakKeluaranOP = () => {
                         </thead>
                         <tbody className="text-gray-600">
                             <tr>
-                                <td colSpan="10" className="text-center p-4 border">Belum ada data</td>
+                                <td className="">1</td>
                             </tr>
                         </tbody>
                     </table>
@@ -100,5 +100,4 @@ const PajakKeluaranOP = () => {
         </div>
     );
 };
-
 export default PajakKeluaranOP;

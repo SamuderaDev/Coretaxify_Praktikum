@@ -39,7 +39,7 @@ const DokumenSaya = () => {
                 </button>
             </div>
             <div className="overflow-x-auto bg-white shadow-md rounded-lg">
-                <table className="min-w-full border border-gray-300">
+                <table className="min-w-full border border-gray-300 ">
                     <thead className="!bg-yellow-500 text-white">
                         <tr>
                             <th className="px-4 py-2 border">Nomor Dokumen</th>
