@@ -7,62 +7,66 @@ import { getCookieToken } from "@/service";
 import axios from "axios";
 import { ClipLoader } from "react-spinners";
 import { RoutesApi } from "@/Routes";
+import { Sidebar } from "react-pro-sidebar";
 
-const ProfilSaya = () => {
+const ProfilSaya = ({ data, sidebar }) => {
   const [activeTab, setActiveTab] = useState("profil");
   const { id, akun } = useParams();
   const token = getCookieToken();
-  const { isLoading, isError, data, error, refetch } = useQuery({
-    queryKey: ["getportal", id],
-    queryFn: async () => {
-      const response = await axios.get(
-        `${RoutesApi.apiUrl}student/assignments/${id}/sistem/${akun}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          params: {
-            intent: "api.get.sistem.ikhtisar.profil",
-          },
-        }
-      );
+  // const { isLoading, isError, data, error, refetch } = useQuery({
+  //   queryKey: ["getportal", id],
+  //   queryFn: async () => {
+  //     const response = await axios.get(
+  //       `${RoutesApi.apiUrl}student/assignments/${id}/sistem/${akun}`,
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //         params: {
+  //           intent: "api.get.sistem.ikhtisar.profil",
+  //         },
+  //       }
+  //     );
 
-      // Check if response data exists
-      if (!response.data) {
-        throw new Error("No data returned from API");
-      }
+  //     // Check if response data exists
+  //     if (!response.data) {
+  //       throw new Error("No data returned from API");
+  //     }
 
-      return response.data.data;
-    },
-    enabled: !!id && !!token,
-  });
-  if (isLoading) {
-    return (
-      <div className="loading">
-        <ClipLoader color="#7502B5" size={50} />
-      </div>
-    );
+  //     return response.data.data;
+  //   },
+  //   enabled: !!id && !!token,
+  // });
+  // if (isLoading) {
+  //   return (
+  //     <div className="loading">
+  //       <ClipLoader color="#7502B5" size={50} />
+  //     </div>
+  //   );
+  // }
+  // if (isError) {
+  //   return (
+  //     <div className="error-container">
+  //       <p>Error loading data: {error.message}</p>
+  //       <button
+  //         onClick={() => refetch()}
+  //         className="px-4 py-2 bg-fuchsia-500 text-white rounded-md mt-2"
+  //       >
+  //         Try Again
+  //       </button>
+  //     </div>
+  //   );
+  // }
+  if (!data || !sidebar) {
+    return <p>Error</p>;
   }
-  if (isError) {
-    return (
-      <div className="error-container">
-        <p>Error loading data: {error.message}</p>
-        <button
-          onClick={() => refetch()}
-          className="px-4 py-2 bg-fuchsia-500 text-white rounded-md mt-2"
-        >
-          Try Again
-        </button>
-      </div>
-    );
-  }
-  console.log("Data fetched:", data);
+  console.log("Data fetched:", data, sidebar);
 
   return (
     <div className="flex h-screen bg-gray-100">
       <SidebarProfilSaya
-        nama_akun={data.nama_akun}
-        npwp_akun={data.npwp_akun}
+        nama_akun={sidebar.nama_akun}
+        npwp_akun={sidebar.npwp_akun}
         akun={{ id, akun }}
       />
       <main className="flex-auto p-3 bg-white rounded-md h-full">

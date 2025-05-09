@@ -12,37 +12,37 @@ import axios from "axios";
 import { ClipLoader } from "react-spinners";
 import { RoutesApi } from "@/Routes";
 
-const InformasiSaya = () => {
+const InformasiSaya = ({ data, sidebar }) => {
   const [activeTab, setActiveTab] = useState("general");
   const { userType } = useUserType();
   const [userTypeFromStorage, setUserTypeFromStorage] = useState("");
-  
+
   const { id, akun } = useParams();
   const token = getCookieToken();
-  const { isLoading, isError, data, error, refetch } = useQuery({
-    queryKey: ["informasiumum", id],
-    queryFn: async () => {
-      const response = await axios.get(
-        `${RoutesApi.apiUrl}student/assignments/${id}/sistem/${akun}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          params: {
-            intent: "api.get.sistem.informasi.umum",
-          },
-        }
-      );
+  // const { isLoading, isError, data, error, refetch } = useQuery({
+  //   queryKey: ["informasiumum", id],
+  //   queryFn: async () => {
+  //     const response = await axios.get(
+  //       `${RoutesApi.apiUrl}student/assignments/${id}/sistem/${akun}`,
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //         params: {
+  //           intent: "api.get.sistem.informasi.umum",
+  //         },
+  //       }
+  //     );
 
-      // Check if response data exists
-      if (!response.data) {
-        throw new Error("No data returned from API");
-      }
+  //     // Check if response data exists
+  //     if (!response.data) {
+  //       throw new Error("No data returned from API");
+  //     }
 
-      return response.data.data;
-    },
-    enabled: !!id && !!token,
-  });
+  //     return response.data.data;
+  //   },
+  //   enabled: !!id && !!token,
+  // });
 
   useEffect(() => {
     const storedUserType = localStorage.getItem("userType");
@@ -54,32 +54,33 @@ const InformasiSaya = () => {
     const type = userType || userTypeFromStorage;
     return type === "Orang Pribadi" ? 1 : 2;
   };
-  if (isLoading) {
-    return (
-      <div className="loading">
-        <ClipLoader color="#7502B5" size={50} />
-      </div>
-    );
-  }
-  if (isError) {
-    return (
-      <div className="error-container">
-        <p>Error loading data: {error.message}</p>
-        <button
-          onClick={() => refetch()}
-          className="px-4 py-2 bg-fuchsia-500 text-white rounded-md mt-2"
-        >
-          Try Again
-        </button>
-      </div>
-    );
-  }
-  console.log("Data fetched:", data);
+  // if (isLoading) {
+  //   return (
+  //     <div className="loading">
+  //       <ClipLoader color="#7502B5" size={50} />
+  //     </div>
+  //   );
+  // }
+  // if (isError) {
+  //   return (
+  //     <div className="error-container">
+  //       <p>Error loading data: {error.message}</p>
+  //       <button
+  //         onClick={() => refetch()}
+  //         className="px-4 py-2 bg-fuchsia-500 text-white rounded-md mt-2"
+  //       >
+  //         Try Again
+  //       </button>
+  //     </div>
+  //   );
+  // }
+  console.log("pls gel");
+  console.log(data, "sidebar", sidebar);
   return (
     <div className="flex h-screen bg-gray-100">
       <SidebarProfilSaya
-        nama_akun={data.nama_akun}
-        npwp_akun={data.npwp_akun}
+        nama_akun={sidebar.nama_akun}
+        npwp_akun={sidebar.npwp_akun}
         akun={{ id, akun }}
       />
       <main className="flex-auto p-3 bg-white rounded-md h-full">

@@ -26,7 +26,12 @@ import { getCookieToken } from "@/service";
 import axios from "axios";
 import { ClipLoader } from "react-spinners";
 import { RoutesApi } from "@/Routes";
-const EditDataProfil = () => {
+import { getCsrf } from "@/service/getCsrf";
+import Swal from "sweetalert2";
+import { deleteContract } from "@/hooks/dashboard";
+import { useCookies } from "react-cookie";
+const EditDataProfil = ({ data, sidebar }) => {
+  const [cookies] = useCookies(["token"]);
   const [isPerwakilan, setIsPerwakilan] = useState(false);
   const [showInformasiUmum, setShowInformasiUmum] = useState(false);
   const [showDataEkonomi, setShowDataEkonomi] = useState(false);
@@ -54,102 +59,574 @@ const EditDataProfil = () => {
 
   const { id, akun } = useParams();
   const token = getCookieToken();
-  const { isLoading, isError, data, error, refetch } = useQuery({
-    queryKey: ["informasiupdate", id],
+  // const { isLoading, isError, data, error, refetch } = useQuery({
+  //   queryKey: ["informasiupdate", id],
+  //   queryFn: async () => {
+  //     const response = await axios.get(
+  //       `${RoutesApi.apiUrl}student/assignments/${id}/sistem/${akun}`,
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //         params: {
+  //           intent: "api.get.sistem.edit.informasi.umum",
+  //         },
+  //       }
+  //     );
+
+  //     // Check if response data exists
+  //     if (!response.data) {
+  //       throw new Error("No data returned from API");
+  //     }
+
+  //     return response.data.data;
+  //   },
+  //   enabled: !!id && !!token,
+  // });
+
+  // const [formData, setFormData] = useState({
+  //   npwp: "",
+  //   jenis_wajib_pajak: "",
+  //   nama: "",
+  //   kategori_wajib_pajak: "",
+  //   negara_asal: "Indonesia",
+  //   nomor_paspor: "",
+  //   tempat_lahir: "",
+  //   tanggal_lahir: "",
+  //   jenis_kelamin: "pria",
+  //   status_perkawinan: "tidak kawin",
+  //   status_hubungan: "",
+  //   agama: "islam",
+  //   jenis_pekerjaan: "swasta",
+  //   nama_ibu_kandung: "",
+  //   nomor_kartu_keluarga: "",
+  //   kewarganegaraan: "WNI",
+  //   bahasa_yang_dipilih: "Bahasa Indonesia",
+  // });
+  console.log("Data fetched:", data);
+  const [formData, setFormData] = useState({
+    npwp: data.field_edit_informasi.informasi_umum.npwp,
+    jenis_wajib_pajak:
+      data.field_edit_informasi.informasi_umum.jenis_wajib_pajak,
+    nama: data.field_edit_informasi.informasi_umum.nama,
+    kategori_wajib_pajak:
+      data.field_edit_informasi.informasi_umum.kategori_wajib_pajak,
+    negara_asal: "Indonesia",
+    // New fields
+    nomor_paspor: data.field_edit_informasi.informasi_umum.nomor_paspor || "",
+    tempat_lahir: data.field_edit_informasi.informasi_umum.tempat_lahir || "",
+    tanggal_lahir: data.field_edit_informasi.informasi_umum.tanggal_lahir || "",
+    jenis_kelamin: data.field_edit_informasi.informasi_umum.jenis_kelamin || "",
+    status_perkawinan:
+      data.field_edit_informasi.informasi_umum.status_perkawinan || "",
+    status_hubungan_keluarga:
+      data.field_edit_informasi.informasi_umum.status_hubungan_keluarga || "",
+    agama: data.field_edit_informasi.informasi_umum.agama || "",
+    jenis_pekerjaan:
+      data.field_edit_informasi.informasi_umum.jenis_pekerjaan || "",
+    nama_ibu_kandung:
+      data.field_edit_informasi.informasi_umum.nama_ibu_kandung || "",
+    nomor_kartu_keluarga:
+      data.field_edit_informasi.informasi_umum.nomor_kartu_keluarga || "",
+    kewarganegaraan:
+      data.field_edit_informasi.informasi_umum.kewarganegaraan || "WNI",
+    bahasa:
+      data.field_edit_informasi.informasi_umum.bahasa || "Bahasa Indonesia",
+  });
+
+  const {
+    data: orangTerkait,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: ["orang_terkait"],
     queryFn: async () => {
-      const response = await axios.get(
-        `${RoutesApi.apiUrl}student/assignments/${id}/sistem/${akun}`,
+      const data = await axios.get(
+        RoutesApi.apiUrl + `student/assignments/${id}/sistem/${akun}`,
         {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${cookies.token}`,
           },
           params: {
-            intent: "api.get.sistem.edit.informasi.umum",
+            intent: "api.sistem.get.akun.orang.pibadi",
           },
         }
       );
-
-      // Check if response data exists
-      if (!response.data) {
-        throw new Error("No data returned from API");
-      }
-
-      return response.data.data;
+      // console.log(data.data);
+      return data.data;
     },
-    enabled: !!id && !!token,
   });
-
-  const [formData, setFormData] = useState({
-    npwp: "",
-    jenis_wajib_pajak: "",
-    nama: "",
-    kategori_wajib_pajak: "",
+  const [formOrangTerkait, setFormOrangTerkait] = useState({
+    // jenis_orang_terkait: "",
+    sub_orang_terkait: "",
+    kewarganegaraan: "Indonesia",
     negara_asal: "Indonesia",
-    nomor_paspor: "",
-    tempat_lahir: "",
-    tanggal_lahir: "",
-    jenis_kelamin: "pria",
-    status_perkawinan: "tidak kawin",
-    status_hubungan: "",
-    agama: "islam",
-    jenis_pekerjaan: "swasta",
-    nama_ibu_kandung: "",
-    nomor_kartu_keluarga: "",
-    kewarganegaraan: "WNI",
-    bahasa_yang_dipilih: "Bahasa Indonesia",
+    keterangan: "keterangan",
+    akun_op: "",
+    tanggal_mulai: "",
+    tanggal_berakhir: "",
+    nama_akun: "",
   });
-  useEffect(() => {
-    if (
-      data &&
-      data.field_edit_informasi &&
-      data.field_edit_informasi.informasi_umum
-    ) {
-      // Initialize form data with values from API response
-      setFormData({
-        npwp: data.field_edit_informasi.informasi_umum.npwp || "",
-        jenis_wajib_pajak:
-          data.field_edit_informasi.informasi_umum.jenis_wajib_pajak || "",
-        nama:
-          data.field_edit_informasi.informasi_umum.nama ||
-          "Samudera Edukasi Teknologi",
-        kategori_wajib_pajak:
-          data.field_edit_informasi.informasi_umum.kategori_wajib_pajak || "",
-        negara_asal:
-          data.field_edit_informasi.informasi_umum.negara_asal || "Indonesia",
-        nomor_paspor:
-          data.field_edit_informasi.informasi_umum.nomor_paspor || "",
-        tempat_lahir:
-          data.field_edit_informasi.informasi_umum.tempat_lahir || "",
-        tanggal_lahir:
-          data.field_edit_informasi.informasi_umum.tanggal_lahir || "",
-        jenis_kelamin:
-          data.field_edit_informasi.informasi_umum.jenis_kelamin || "pria",
-        status_perkawinan:
-          data.field_edit_informasi.informasi_umum.status_perkawinan ||
-          "tidak kawin",
-        status_hubungan:
-          data.field_edit_informasi.informasi_umum.status_hubungan || "",
-        agama: data.field_edit_informasi.informasi_umum.agama || "islam",
-        jenis_pekerjaan:
-          data.field_edit_informasi.informasi_umum.jenis_pekerjaan || "swasta",
-        nama_ibu_kandung:
-          data.field_edit_informasi.informasi_umum.nama_ibu_kandung || "",
-        nomor_kartu_keluarga:
-          data.field_edit_informasi.informasi_umum.nomor_kartu_keluarga || "",
-        kewarganegaraan:
-          data.field_edit_informasi.informasi_umum.kewarganegaraan || "WNI",
-        bahasa_yang_dipilih:
-          data.field_edit_informasi.informasi_umum.bahasa_yang_dipilih ||
-          "Bahasa Indonesia",
-      });
-
-      console.log(
-        "Form data initialized with API data:",
-        data.field_edit_informasi.informasi_umum
+  const handlePersonTypeChange = (e) => {
+    console.log("AA");
+    const { name, value } = e.target;
+    console.log(name, value);
+    setFormOrangTerkait((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+  const createPihakTerkait = useMutation({
+    mutationFn: async (data) => {
+      const csrf = await getCsrf();
+      return axios.post(
+        `${RoutesApi.url}api/student/assignments/${id}/sistem/${akun}/pihak-terkait`,
+        formOrangTerkait,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            "X-CSRF-TOKEN": csrf,
+            Authorization: `Bearer ${cookies.token}`,
+          },
+        }
       );
-    }
-  }, [data]);
+    },
+    onSuccess: (data) => {
+      console.log(data);
+      Swal.fire(
+        "Berhasil!",
+        "Data informasi umum berhasil disimpan!",
+        "success"
+      ).then((result) => {
+        if (result.isConfirmed) {
+          window.location.reload();
+        }
+      });
+    },
+    onError: (error) => {
+      console.error("Error saving data:", error);
+      Swal.fire("Gagal!", "Terjadi kesalahan saat menyimpan data.", "error");
+    },
+  });
 
+  const deleteOrangTerkait = useMutation({
+    mutationFn: async (user_id) => {
+      const csrf = await getCsrf();
+      return axios.delete(
+        `${RoutesApi.url}api/student/assignments/${id}/sistem/${akun}/pihak-terkait/${user_id}`,
+        {
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            Accept: "application/json",
+            "X-CSRF-TOKEN": csrf,
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+    },
+    onSuccess: (data) => {
+      console.log(data);
+      Swal.fire("Berhasil!", "Pihak terkait berhasil dihapus!", "success").then(
+        (result) => {
+          if (result.isConfirmed) {
+            window.location.reload();
+          }
+        }
+      );
+    },
+    onError: (error) => {
+      console.error("Error saving data:", error);
+      Swal.fire("Gagal!", "Terjadi kesalahan saat menyimpan data.", "error");
+    },
+  });
+
+  const [tkuFormData, setTkuFormData] = useState({
+    nitku: "",
+    jenis_tku: "",
+    nama_tku: "",
+    jenis_usaha: "",
+  });
+
+  const handleTkuChange = (e) => {
+    const { name, value } = e.target;
+    setTkuFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const createTku = useMutation({
+    mutationFn: async () => {
+      const csrf = await getCsrf();
+      return axios.post(
+        `${RoutesApi.url}api/student/assignments/${id}/sistem/${akun}/tempat-kegiatan-usaha`,
+        tkuFormData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            "X-CSRF-TOKEN": csrf,
+            Authorization: `Bearer ${cookies.token}`,
+          },
+        }
+      );
+    },
+    onSuccess: (data) => {
+      console.log(data);
+      Swal.fire(
+        "Berhasil!",
+        "Data tempat kegiatan usaha berhasil disimpan!",
+        "success"
+      ).then((result) => {
+        if (result.isConfirmed) {
+          window.location.reload();
+        }
+      });
+    },
+    onError: (error) => {
+      console.error("Error saving data:", error);
+      Swal.fire("Gagal!", "Terjadi kesalahan saat menyimpan data.", "error");
+    },
+  });
+  const updateTku = useMutation({
+    mutationFn: async (idTku) => {
+      const csrf = await getCsrf();
+      return axios.put(
+        `${RoutesApi.url}api/student/assignments/${id}/sistem/${akun}/tempat-kegiatan-usaha/${idTku}`,
+        tkuFormData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            "X-CSRF-TOKEN": csrf,
+            Authorization: `Bearer ${cookies.token}`,
+          },
+        }
+      );
+    },
+    onSuccess: (data) => {
+      console.log(data);
+      Swal.fire(
+        "Berhasil!",
+        "Data tempat kegiatan usaha berhasil disimpan!",
+        "success"
+      ).then((result) => {
+        if (result.isConfirmed) {
+          window.location.reload();
+        }
+      });
+    },
+    onError: (error) => {
+      console.error("Error saving data:", error);
+      Swal.fire("Gagal!", "Terjadi kesalahan saat menyimpan data.", "error");
+    },
+  });
+  const deleteTku = useMutation({
+    mutationFn: async (idTku) => {
+      const csrf = await getCsrf();
+      return axios.delete(
+        `${RoutesApi.url}api/student/assignments/${id}/sistem/${akun}/tempat-kegiatan-usaha/${idTku}`,
+        {
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            Accept: "application/json",
+            "X-CSRF-TOKEN": csrf,
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+    },
+    onSuccess: (data) => {
+      console.log(data);
+      Swal.fire("Berhasil!", "Data TKU berhasil dihapus!", "success").then(
+        (result) => {
+          if (result.isConfirmed) {
+            window.location.reload();
+          }
+        }
+      );
+    },
+    onError: (error) => {
+      console.error("Error saving data:", error);
+      Swal.fire("Gagal!", "Terjadi kesalahan saat menghapus data.", "error");
+    },
+  });
+
+  const [bankFormData, setBankFormData] = useState({
+    nama_bank: "",
+    nomor_rekening_bank: "",
+    jenis_rekening_bank: "akun-bisnis",
+    nama_pemilik_bank: "",
+    tanggal_mulai: "",
+    tanggal_berakhir: "",
+  });
+
+  const handleBankChange = (e) => {
+    const { name, value } = e.target;
+    setBankFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  // Add this mutation with your other mutations
+  const createBankDetail = useMutation({
+    mutationFn: async () => {
+      const csrf = await getCsrf();
+      return axios.post(
+        `${RoutesApi.url}api/student/assignments/${id}/sistem/${akun}/detail-bank`,
+        bankFormData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            "X-CSRF-TOKEN": csrf,
+            Authorization: `Bearer ${cookies.token}`,
+          },
+        }
+      );
+    },
+    onSuccess: (data) => {
+      console.log(data);
+      Swal.fire(
+        "Berhasil!",
+        "Data detail bank berhasil disimpan!",
+        "success"
+      ).then((result) => {
+        if (result.isConfirmed) {
+          window.location.reload();
+        }
+      });
+    },
+    onError: (error) => {
+      console.error("Error saving data:", error);
+      Swal.fire("Gagal!", "Terjadi kesalahan saat menyimpan data.", "error");
+    },
+  });
+  const updateDetailBank = useMutation({
+    mutationFn: async (bank_id) => {
+      const csrf = await getCsrf();
+      return axios.put(
+        `${RoutesApi.url}api/student/assignments/${id}/sistem/${akun}/detail-bank/${bank_id}`,
+        bankFormData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            "X-CSRF-TOKEN": csrf,
+            Authorization: `Bearer ${cookies.token}`,
+          },
+        }
+      );
+    },
+    onSuccess: (data) => {
+      console.log(data);
+      Swal.fire(
+        "Berhasil!",
+        "Data detail bank berhasil disimpan!",
+        "success"
+      ).then((result) => {
+        if (result.isConfirmed) {
+          window.location.reload();
+        }
+      });
+    },
+    onError: (error) => {
+      console.error("Error saving data:", error);
+      Swal.fire("Gagal!", "Terjadi kesalahan saat menyimpan data.", "error");
+    },
+  });
+  const deleteDetailBank = useMutation({
+    mutationFn: async (bank_id) => {
+      const csrf = await getCsrf();
+      return axios.delete(
+        `${RoutesApi.url}api/student/assignments/${id}/sistem/${akun}/detail-bank/${bank_id}`,
+        {
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            Accept: "application/json",
+            "X-CSRF-TOKEN": csrf,
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+    },
+    onSuccess: (data) => {
+      console.log(data);
+      Swal.fire("Berhasil!", "Bank berhasil dihapus!", "success").then(
+        (result) => {
+          if (result.isConfirmed) {
+            window.location.reload();
+          }
+        }
+      );
+    },
+    onError: (error) => {
+      console.error("Error saving data:", error);
+      Swal.fire("Gagal!", "Terjadi kesalahan saat menyimpan data.", "error");
+    },
+  });
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prevState) => ({
+      ...prevState,
+      [name]: value,
+    }));
+  };
+  const updateInformasiUmum = useMutation({
+    mutationFn: async () => {
+      const csrf = await getCsrf();
+      return axios.put(
+        `${RoutesApi.url}api/student/assignments/${id}/sistem/${akun}/informasi-umum/${akun}`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            "X-CSRF-TOKEN": csrf,
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+    },
+    onSuccess: (data) => {
+      console.log(data);
+      Swal.fire(
+        "Berhasil!",
+        "Data informasi umum berhasil disimpan!",
+        "success"
+      ).then((result) => {
+        if (result.isConfirmed) {
+          window.location.reload();
+        }
+      });
+    },
+    onError: (error) => {
+      console.error("Error saving data:", error);
+      Swal.fire("Gagal!", "Terjadi kesalahan saat menyimpan data.", "error");
+    },
+  });
+  const [contactFormData, setContactFormData] = useState({
+    jenis_kontak: "",
+    nomor_telpon: "",
+    nomor_handphone: "",
+    nomor_faksimile: "",
+    alamat_email: "",
+    alamat_situs_wajib: "",
+    keterangan: "",
+    tanggal_mulai: "",
+    tanggal_berakhir: "",
+  });
+  const handleContactChange = (e) => {
+    const { name, value } = e.target;
+    setContactFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+  // http://127.0.0.1:8000/api/student/assignments/1/sistem/1/detail-kontak
+  const createContact = useMutation({
+    mutationFn: async () => {
+      const csrf = await getCsrf();
+      return axios.post(
+        `${RoutesApi.url}api/student/assignments/${id}/sistem/${akun}/detail-kontak`,
+        contactFormData,
+        {
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            Accept: "application/json",
+            "X-CSRF-TOKEN": csrf,
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+    },
+    onSuccess: (data) => {
+      console.log(data);
+      Swal.fire(
+        "Berhasil!",
+        "Data detail kontak berhasil disimpan!",
+        "success"
+      ).then((result) => {
+        if (result.isConfirmed) {
+          window.location.reload();
+        }
+      });
+    },
+    onError: (error) => {
+      console.error("Error saving data:", error);
+      Swal.fire("Gagal!", "Terjadi kesalahan saat menyimpan data.", "error");
+    },
+  });
+  const updateContact = useMutation({
+    mutationFn: async (contact_id) => {
+      const csrf = await getCsrf();
+
+      return axios.put(
+        `${RoutesApi.url}api/student/assignments/${id}/sistem/${akun}/detail-kontak/${contact_id}`,
+        contactFormData,
+        {
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            Accept: "application/json",
+            "X-CSRF-TOKEN": csrf,
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+    },
+    onSuccess: (data) => {
+      console.log(data);
+      Swal.fire(
+        "Berhasil!",
+        "Data detail kontak berhasil diubah!",
+        "success"
+      ).then((result) => {
+        if (result.isConfirmed) {
+          window.location.reload();
+        }
+      });
+    },
+    onError: (error) => {
+      console.error("Error saving data:", error);
+      Swal.fire("Gagal!", "Terjadi kesalahan saat menyimpan data.", "error");
+    },
+  });
+  const deleteContact = useMutation({
+    mutationFn: async (contact_id) => {
+      const csrf = await getCsrf();
+      return axios.delete(
+        `${RoutesApi.url}api/student/assignments/${id}/sistem/${akun}/detail-kontak/${contact_id}`,
+        {
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            Accept: "application/json",
+            "X-CSRF-TOKEN": csrf,
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+    },
+    onSuccess: (data) => {
+      console.log(data);
+      Swal.fire(
+        "Berhasil!",
+        "Data detail kontak berhasil dihapus!",
+        "success"
+      ).then((result) => {
+        if (result.isConfirmed) {
+          window.location.reload();
+        }
+      });
+    },
+    onError: (error) => {
+      console.error("Error saving data:", error);
+      Swal.fire("Gagal!", "Terjadi kesalahan saat menyimpan data.", "error");
+    },
+  });
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log(formData);
@@ -168,40 +645,11 @@ const EditDataProfil = () => {
     //     }
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prevState) => ({
-      ...prevState,
-      [name]: value,
-    }));
-  };
-
-  if (isLoading) {
-    return (
-      <div className="loading">
-        <ClipLoader color="#7502B5" size={50} />
-      </div>
-    );
-  }
-  if (isError) {
-    return (
-      <div className="error-container">
-        <p>Error loading data: {error.message}</p>
-        <button
-          onClick={() => refetch()}
-          className="px-4 py-2 bg-fuchsia-500 text-white rounded-md mt-2"
-        >
-          Try Again
-        </button>
-      </div>
-    );
-  }
-  console.log("Data fetched:", data);
   return (
     <div className="flex h-screen bg-gray-100">
       <SidebarProfilSaya
-        nama_akun={data.field_edit_informasi.informasi_umum.nama}
-        npwp_akun={data.field_edit_informasi.informasi_umum.npwp}
+        nama_akun={sidebar.nama_akun}
+        npwp_akun={sidebar.npwp_akun}
         akun={{ id, akun }}
       />
       <div className="flex-grow p-6 bg-white  h-full">
@@ -341,9 +789,12 @@ const EditDataProfil = () => {
                   Kategori Wajib Pajak
                 </label>
                 <input
-                  value={formData.kategori_wajib_pajak}
                   name="kategori_wajib_pajak"
-                  type="text"
+                  value={
+                    formData.kategori_wajib_pajak === "Badan"
+                      ? "Perseorangan Terbatas (PT)"
+                      : "Orang Pribadi"
+                  }
                   className="w-full p-2 border rounded-md bg-gray-100 text-gray-600 cursor-not-allowed"
                   readOnly
                 />
@@ -493,6 +944,7 @@ const EditDataProfil = () => {
                   name="nama_ibu_kandung"
                   className="w-full p-2 border rounded-md bg-white text-gray-600"
                   onChange={handleChange}
+                  placeholder={formData.nama_ibu_kandung}
                   value={formData.nama_ibu_kandung}
                 />
               </div>
@@ -539,7 +991,8 @@ const EditDataProfil = () => {
               <button
                 type="submit"
                 className="px-4 py-2 bg-blue-500 text-white rounded-md"
-                onClick={handleSubmit}
+                onClick={() => updateInformasiUmum.mutate()}
+                // onClick={() => console.log(formData)}
               >
                 Simpan
               </button>
@@ -983,7 +1436,11 @@ const EditDataProfil = () => {
                       <label className="block text-sm font-medium text-gray-700">
                         Jenis Kontak
                       </label>
-                      <select className="w-full p-2 border rounded-md bg-white mt-1">
+                      <select
+                        className="w-full p-2 border rounded-md bg-white mt-1"
+                        name="jenis_kontak"
+                        onChange={handleContactChange}
+                      >
                         <option value="kontak-alternatif-wajib-pajak">
                           Kontak Alternatif Wajib Pajak
                         </option>
@@ -1007,8 +1464,10 @@ const EditDataProfil = () => {
                       </label>
                       <input
                         type="text"
+                        name="nomor_telpon"
                         className="w-full p-2 border rounded-md bg-white mt-1"
                         placeholder="Masukkan nomor telepon"
+                        onChange={handleContactChange}
                       />
                     </div>
                     <div>
@@ -1017,7 +1476,9 @@ const EditDataProfil = () => {
                       </label>
                       <input
                         type="text"
+                        name="nomor_handphone"
                         className="w-full p-2 border rounded"
+                        onChange={handleContactChange}
                       />
                     </div>
                     <div>
@@ -1026,7 +1487,9 @@ const EditDataProfil = () => {
                       </label>
                       <input
                         type="text"
+                        name="nomor_faksimile"
                         className="w-full p-2 border rounded"
+                        onChange={handleContactChange}
                       />
                     </div>
                     <div>
@@ -1035,8 +1498,10 @@ const EditDataProfil = () => {
                       </label>
                       <input
                         type="text"
+                        name="alamat_email"
                         className="w-full p-2 border rounded bg-gray-100 cursor-not-allowed"
-                        disabled
+                        onChange={handleContactChange}
+                        // disabled
                       />
                       {/* Ngelink dari upload awal akun */}
                     </div>
@@ -1046,14 +1511,20 @@ const EditDataProfil = () => {
                       </label>
                       <input
                         type="text"
+                        name="alamat_situs_wajib"
                         className="w-full p-2 border rounded"
+                        onChange={handleContactChange}
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium">
                         Keterangan
                       </label>
-                      <textarea className="w-full p-2 border rounded "></textarea>
+                      <textarea
+                        name="keterangan"
+                        className="w-full p-2 border rounded"
+                        onChange={handleContactChange}
+                      ></textarea>
                     </div>
                     <div>
                       <label className="block text-sm font-medium">
@@ -1061,7 +1532,9 @@ const EditDataProfil = () => {
                       </label>
                       <input
                         type="date"
+                        name="tanggal_mulai"
                         className="w-full p-2 border rounded"
+                        onChange={handleContactChange}
                       />
                     </div>
                     <div>
@@ -1070,15 +1543,22 @@ const EditDataProfil = () => {
                       </label>
                       <input
                         type="date"
+                        name="tanggal_berakhir"
                         className="w-full p-2 border rounded"
+                        onChange={handleContactChange}
                       />
                     </div>
                   </div>
+
                   <AlertDialogFooter className="flex justify-end mt-6 space-x-2">
                     <AlertDialogCancel className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600">
                       Batal
                     </AlertDialogCancel>
-                    <AlertDialogAction className="bg-blue-900 text-white px-4 py-2 rounded-md hover:bg-blue-950">
+                    <AlertDialogAction
+                      onClick={() => createContact.mutate()}
+                      // onClick={()=>console.log(contactFormData)}
+                      className="bg-blue-900 text-white px-4 py-2 rounded-md hover:bg-blue-950"
+                    >
                       Simpan
                     </AlertDialogAction>
                   </AlertDialogFooter>
@@ -1103,39 +1583,237 @@ const EditDataProfil = () => {
                   </tr>
                 </thead>
                 <tbody className="text-gray-600">
-                  {contacts.length === 0 ? (
+                  {data.field_edit_informasi.detail_kontak.length === 0 ? (
                     <tr>
                       <td colSpan="10" className="text-center p-4 border">
                         Belum ada kontak
                       </td>
                     </tr>
                   ) : (
-                    contacts.map((contact, index) => (
-                      <tr key={index} className="bg-gray-100">
-                        <td className="px-4 py-4 border">
-                          <button>Edit</button>
-                        </td>
-                        <td className="px-2 py-4 border">{contact.jenis}</td>
-                        <td className="px-4 py-4 border">{contact.telepon}</td>
-                        <td className="px-4 py-4 border">
-                          {contact.handphone}
-                        </td>
-                        <td className="px-4 py-4 border">
-                          {contact.faksimile}
-                        </td>
-                        <td className="px-4 py-4 border">{contact.email}</td>
-                        <td className="px-4 py-4 border">{contact.situsweb}</td>
-                        <td className="px-4 py-4 border">
-                          {contact.keterangan}
-                        </td>
-                        <td className="px-4 py-4 border">
-                          {contact.tanggalMulai}
-                        </td>
-                        <td className="px-4 py-4 border">
-                          {contact.tanggalBerakhir}
-                        </td>
-                      </tr>
-                    ))
+                    data.field_edit_informasi.detail_kontak.map(
+                      (contact, index) => (
+                        <tr key={index} className="bg-gray-100">
+                          <td className="px-4 py-4 border flex gap-2">
+                            {/* <button>Edit</button> */}
+                            <AlertDialog>
+                              <AlertDialogTrigger
+                                onClick={() => setContactFormData(contact)}
+                                className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-md"
+                              >
+                                Ubah Kontak
+                              </AlertDialogTrigger>
+                              <AlertDialogContent className="bg-white !min-w-[1000px] rounded-lg shadow-lg ">
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle className="text-xl font-bold">
+                                    Ubah Kontak Wajib Pajak
+                                  </AlertDialogTitle>
+                                </AlertDialogHeader>
+                                <div className="grid gap-4 overflow-auto h-96">
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700">
+                                      Jenis Kontak
+                                    </label>
+                                    <select
+                                      className="w-full p-2 border rounded-md bg-white mt-1"
+                                      name="jenis_kontak"
+                                      value={contactFormData.jenis_kontak || ""}
+                                      onChange={handleContactChange}
+                                    >
+                                      <option value="kontak-alternatif-wajib-pajak">
+                                        Kontak Alternatif Wajib Pajak
+                                      </option>
+                                      <option value="kontak-utama-wajib-pajak">
+                                        Kontak Utama Wajib Pajak
+                                      </option>
+                                      <option value="kontak-orang-alternatif">
+                                        Kontak Orang Alternatif
+                                      </option>
+                                      <option value="kontak-orang-utama">
+                                        Kontak Orang Utama
+                                      </option>
+                                      <option value="kontak-teknis-wajib-pajak">
+                                        Kontak Teknis Wajib Pajak
+                                      </option>
+                                    </select>
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700">
+                                      Nomor Telepon
+                                    </label>
+                                    <input
+                                      type="text"
+                                      name="nomor_telpon"
+                                      className="w-full p-2 border rounded-md bg-white mt-1"
+                                      placeholder="Masukkan nomor telepon"
+                                      value={contactFormData.nomor_telpon || ""}
+                                      onChange={handleContactChange}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-medium">
+                                      Nomor Handphone Baru
+                                    </label>
+                                    <input
+                                      type="text"
+                                      name="nomor_handphone"
+                                      className="w-full p-2 border rounded"
+                                      value={
+                                        contactFormData.nomor_handphone || ""
+                                      }
+                                      onChange={handleContactChange}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-medium">
+                                      Nomor Faksimile
+                                    </label>
+                                    <input
+                                      type="text"
+                                      name="nomor_faksimile"
+                                      className="w-full p-2 border rounded"
+                                      value={
+                                        contactFormData.nomor_faksimile || ""
+                                      }
+                                      onChange={handleContactChange}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-medium">
+                                      Alamat Email
+                                    </label>
+                                    <input
+                                      type="text"
+                                      name="alamat_email"
+                                      className="w-full p-2 border rounded bg-gray-100"
+                                      value={contactFormData.alamat_email || ""}
+                                      onChange={handleContactChange}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-medium">
+                                      Website
+                                    </label>
+                                    <input
+                                      type="text"
+                                      name="alamat_situs_wajib"
+                                      className="w-full p-2 border rounded"
+                                      value={
+                                        contactFormData.alamat_situs_wajib || ""
+                                      }
+                                      onChange={handleContactChange}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-medium">
+                                      Keterangan
+                                    </label>
+                                    <textarea
+                                      name="keterangan"
+                                      className="w-full p-2 border rounded"
+                                      value={contactFormData.keterangan || ""}
+                                      onChange={handleContactChange}
+                                    ></textarea>
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-medium">
+                                      Tanggal Mulai
+                                    </label>
+                                    <input
+                                      type="date"
+                                      name="tanggal_mulai"
+                                      className="w-full p-2 border rounded"
+                                      value={
+                                        contactFormData.tanggal_mulai || ""
+                                      }
+                                      onChange={handleContactChange}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-medium">
+                                      Tanggal Berakhir
+                                    </label>
+                                    <input
+                                      type="date"
+                                      name="tanggal_berakhir"
+                                      className="w-full p-2 border rounded"
+                                      value={
+                                        contactFormData.tanggal_berakhir || ""
+                                      }
+                                      onChange={handleContactChange}
+                                    />
+                                  </div>
+                                </div>
+
+                                <AlertDialogFooter className="flex justify-end mt-6 space-x-2">
+                                  <AlertDialogCancel className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600">
+                                    Batal
+                                  </AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() =>
+                                      updateContact.mutate(contact.id)
+                                    }
+                                    // onClick={()=>console.log(contactFormData)}
+                                    className="bg-blue-900 text-white px-4 py-2 rounded-md hover:bg-blue-950"
+                                  >
+                                    Simpan
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                            <button
+                              className="action-button delete"
+                              onClick={() => {
+                                Swal.fire({
+                                  title: "Hapus Kontak?",
+                                  text: "Kontak akan dihapus secara permanen!",
+                                  icon: "warning",
+                                  showCancelButton: true,
+                                  confirmButtonText: "Ya, hapus!",
+                                  cancelButtonText: "Batal",
+                                }).then((result) => {
+                                  if (result.isConfirmed) {
+                                    deleteContact.mutate(contact.id);
+                                  }
+                                });
+                              }}
+                            >
+                              {deleteContact.status == "pending" ? (
+                                <p>Loading...</p>
+                              ) : (
+                                <>Delete</>
+                              )}
+                            </button>
+                          </td>
+                          <td className="px-2 py-4 border">
+                            {contact.jenis_kontak}
+                          </td>
+                          <td className="px-4 py-4 border">
+                            {contact.nomor_telpon}
+                          </td>
+                          <td className="px-4 py-4 border">
+                            {contact.nomor_handphone}
+                          </td>
+                          <td className="px-4 py-4 border">
+                            {contact.nomor_faksimile}
+                          </td>
+                          <td className="px-4 py-4 border">
+                            {contact.alamat_email}
+                          </td>
+                          <td className="px-4 py-4 border">
+                            {contact.alamat_situs_wajib}
+                          </td>
+                          <td className="px-4 py-4 border">
+                            {contact.keterangan}
+                          </td>
+                          <td className="px-4 py-4 border">
+                            {contact.tanggal_mulai}
+                          </td>
+                          <td className="px-4 py-4 border">
+                            {contact.tanggal_berakhir}
+                          </td>
+                        </tr>
+                      )
+                    )
                   )}
                 </tbody>
               </table>
@@ -1443,7 +2121,7 @@ const EditDataProfil = () => {
             <div className="spcae-y-2 h-full">
               <h1 className="text-lg font-semibold">Alamat Utama</h1>
               <p className="mt-2">
-                Detail Alamat Utama : Link dari import an awal kang
+                Detail Alamat Utama : {data.alamat_utama_akun}
               </p>
             </div>
           </div>
@@ -1477,8 +2155,11 @@ const EditDataProfil = () => {
                       </label>
                       <input
                         type="text"
+                        name="nitku"
+                        value={tkuFormData.nitku}
+                        onChange={handleTkuChange}
                         className="w-full p-2 border rounded-md bg-white mt-1"
-                        placeholder="Masukkan nomor telepon"
+                        placeholder="Masukkan NITKU"
                       />
                     </div>
                     <div>
@@ -1487,6 +2168,9 @@ const EditDataProfil = () => {
                       </label>
                       <input
                         type="text"
+                        name="jenis_tku"
+                        value={tkuFormData.jenis_tku}
+                        onChange={handleTkuChange}
                         className="w-full p-2 border rounded"
                       />
                     </div>
@@ -1496,6 +2180,9 @@ const EditDataProfil = () => {
                       </label>
                       <input
                         type="text"
+                        name="nama_tku"
+                        value={tkuFormData.nama_tku}
+                        onChange={handleTkuChange}
                         className="w-full p-2 border rounded"
                       />
                     </div>
@@ -1505,15 +2192,22 @@ const EditDataProfil = () => {
                       </label>
                       <input
                         type="text"
+                        name="jenis_usaha"
+                        value={tkuFormData.jenis_usaha}
+                        onChange={handleTkuChange}
                         className="w-full p-2 border rounded"
                       />
                     </div>
                   </div>
+
                   <AlertDialogFooter className="flex justify-end mt-6 space-x-2">
                     <AlertDialogCancel className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600">
                       Batal
                     </AlertDialogCancel>
-                    <AlertDialogAction className="bg-blue-900 text-white px-4 py-2 rounded-md hover:bg-blue-950">
+                    <AlertDialogAction
+                      onClick={() => createTku.mutate()}
+                      className="bg-blue-900 text-white px-4 py-2 rounded-md hover:bg-blue-950"
+                    >
                       Simpan
                     </AlertDialogAction>
                   </AlertDialogFooter>
@@ -1538,26 +2232,105 @@ const EditDataProfil = () => {
                   </tr>
                 </thead>
                 <tbody className="text-gray-600">
-                  <tr className="bg-gray-100">
-                    <td className="px-1 py-4 border">
-                      <button className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-2 rounded">
-                        Edit
-                      </button>
-                      <button className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-2 rounded ml-2">
-                        Lihat
-                      </button>
-                    </td>
-                    <td className="px-4 py-4 border">1234567890</td>
-                    <td className="px-4 py-4 border">
-                      Jenis Tempat Kegiatan Usaha
-                    </td>
-                    <td className="px-4 py-4 border">
-                      Nama Tempat Kegiatan Usaha
-                    </td>
-                    <td className="px-4 py-4 border">
-                      Kode KLU Tempat Kegiatan Usaha
-                    </td>
-                  </tr>
+                  {data.field_edit_informasi.tempat_kegiatan_usaha.map(
+                    (tku) => (
+                      <tr className="bg-gray-100">
+                        <td className="px-1 py-4 border">
+                          <AlertDialog>
+                            <AlertDialogTrigger
+                              onClick={() => setTkuFormData(tku)}
+                              className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-md"
+                            >
+                              Edit
+                            </AlertDialogTrigger>
+                            <AlertDialogContent className="bg-white !min-w-[1000px] rounded-lg shadow-lg ">
+                              <AlertDialogHeader>
+                                <AlertDialogTitle className="text-xl font-bold">
+                                  Tambahkan Tempat Kegiatan Baru
+                                </AlertDialogTitle>
+                              </AlertDialogHeader>
+                              <div className="grid gap-4 overflow-auto h-96">
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700">
+                                    NITKU
+                                  </label>
+                                  <input
+                                    type="text"
+                                    name="nitku"
+                                    value={tkuFormData.nitku}
+                                    onChange={handleTkuChange}
+                                    className="w-full p-2 border rounded-md bg-white mt-1"
+                                    placeholder="Masukkan NITKU"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700">
+                                    Jenis TKU *
+                                  </label>
+                                  <input
+                                    type="text"
+                                    name="jenis_tku"
+                                    value={tkuFormData.jenis_tku}
+                                    onChange={handleTkuChange}
+                                    className="w-full p-2 border rounded"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700">
+                                    Nama TKU
+                                  </label>
+                                  <input
+                                    type="text"
+                                    name="nama_tku"
+                                    value={tkuFormData.nama_tku}
+                                    onChange={handleTkuChange}
+                                    className="w-full p-2 border rounded"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700">
+                                    Jenis Usaha
+                                  </label>
+                                  <input
+                                    type="text"
+                                    name="jenis_usaha"
+                                    value={tkuFormData.jenis_usaha}
+                                    onChange={handleTkuChange}
+                                    className="w-full p-2 border rounded"
+                                  />
+                                </div>
+                              </div>
+
+                              <AlertDialogFooter className="flex justify-end mt-6 space-x-2">
+                                <AlertDialogCancel className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600">
+                                  Batal
+                                </AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => updateTku.mutate(tku.id)}
+                                  className="bg-blue-900 text-white px-4 py-2 rounded-md hover:bg-blue-950"
+                                >
+                                  Simpan
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                          <button className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-2 rounded ml-2">
+                            Lihat
+                          </button>
+                          <button
+                            onClick={() => deleteTku.mutate(tku.id)}
+                            className="bg-red-500 hover:bg-red-600 text-white py-2 px-2 rounded ml-2"
+                          >
+                            Hapus
+                          </button>
+                        </td>
+                        <td className="px-4 py-4 border">{tku.nitku}</td>
+                        <td className="px-4 py-4 border">{tku.jenis_tku}</td>
+                        <td className="px-4 py-4 border">{tku.nama_tku} </td>
+                        <td className="px-4 py-4 border">{tku.nama_tku} </td>
+                      </tr>
+                    )
+                  )}
                 </tbody>
               </table>
             </div>
@@ -1588,60 +2361,83 @@ const EditDataProfil = () => {
                       <label className="block text-sm font-medium text-gray-700">
                         Bank *
                       </label>
-                      <select className="w-full p-2 border rounded">
+                      <select
+                        className="w-full p-2 border rounded"
+                        name="nama_bank"
+                        value={bankFormData.nama_bank}
+                        onChange={handleBankChange}
+                      >
                         <option value="">Pilih Bank</option>
-                        <option value="mandiri">
+                        <option value="PT BANK MANDIRI (PERSERO) Tbk">
                           PT BANK MANDIRI (PERSERO) Tbk
                         </option>
-                        <option value="bca">PT BANK CENTRAL ASIA Tbk</option>
-                        <option value="bri">
+                        <option value="PT BANK CENTRAL ASIA Tbk">
+                          PT BANK CENTRAL ASIA Tbk
+                        </option>
+                        <option value="PT BANK RAKYAT INDONESIA (PERSERO) Tbk">
                           PT BANK RAKYAT INDONESIA (PERSERO) Tbk
                         </option>
-                        <option value="bni">
+                        <option value="PT BANK NEGARA INDONESIA (PERSERO) Tbk">
                           PT BANK NEGARA INDONESIA (PERSERO) Tbk
                         </option>
-                        <option value="bukopin">PT BANK BUKOPIN Tbk</option>
-                        <option value="btpn">PT BANK BTPN Tbk</option>
-                        <option value="cimb">PT BANK CIMB NIAGA Tbk</option>
-                        <option value="danamon">PT BANK DANAMON Tbk</option>
-                        <option value="maybank">PT BANK MAYBANK Tbk</option>
-                        <option value="mega">PT BANK MEGA Tbk</option>
-                        <option value="permata">PT BANK PERMATA Tbk</option>
-                        <option value="panin">PT BANK PANIN Tbk</option>
-                        <option value="panin_syariah">
+                        <option value="PT BANK BUKOPIN Tbk">
+                          PT BANK BUKOPIN Tbk
+                        </option>
+                        <option value="PT BANK BTPN Tbk">
+                          PT BANK BTPN Tbk
+                        </option>
+                        <option value="PT BANK CIMB NIAGA Tbk">
+                          PT BANK CIMB NIAGA Tbk
+                        </option>
+                        <option value="PT BANK DANAMON Tbk">
+                          PT BANK DANAMON Tbk
+                        </option>
+                        <option value="PT BANK MAYBANK Tbk">
+                          PT BANK MAYBANK Tbk
+                        </option>
+                        <option value="PT BANK MEGA Tbk">
+                          PT BANK MEGA Tbk
+                        </option>
+                        <option value="PT BANK PERMATA Tbk">
+                          PT BANK PERMATA Tbk
+                        </option>
+                        <option value="PT BANK PANIN Tbk">
+                          PT BANK PANIN Tbk
+                        </option>
+                        <option value="PT BANK PANIN SYARIAH Tbk">
                           PT BANK PANIN SYARIAH Tbk
                         </option>
-                        <option value="maybank_syariah">
+                        <option value="PT BANK MAYBANK SYARIAH Tbk">
                           PT BANK MAYBANK SYARIAH Tbk
                         </option>
-                        <option value="bsi">
+                        <option value="PT BANK SYARIAH INDONESIA Tbk">
                           PT BANK SYARIAH INDONESIA Tbk
                         </option>
-                        <option value="bsi_syariah">
+                        <option value="PT BANK SYARIAH INDONESIA SYARIAH Tbk">
                           PT BANK SYARIAH INDONESIA SYARIAH Tbk
                         </option>
-                        <option value="bca_syariah">
+                        <option value="PT BANK CENTRAL ASIA SYARIAH Tbk">
                           PT BANK CENTRAL ASIA SYARIAH Tbk
                         </option>
-                        <option value="bri_syariah">
+                        <option value="PT BANK RAKYAT INDONESIA SYARIAH Tbk">
                           PT BANK RAKYAT INDONESIA SYARIAH Tbk
                         </option>
-                        <option value="bni_syariah">
+                        <option value="PT BANK NEGARA INDONESIA SYARIAH Tbk">
                           PT BANK NEGARA INDONESIA SYARIAH Tbk
                         </option>
-                        <option value="bukopin_syariah">
+                        <option value="PT BANK BUKOPIN SYARIAH Tbk">
                           PT BANK BUKOPIN SYARIAH Tbk
                         </option>
-                        <option value="btpn_syariah">
+                        <option value="PT BANK BTPN SYARIAH Tbk">
                           PT BANK BTPN SYARIAH Tbk
                         </option>
-                        <option value="cimb_syariah">
+                        <option value="PT BANK CIMB NIAGA SYARIAH Tbk">
                           PT BANK CIMB NIAGA SYARIAH Tbk
                         </option>
-                        <option value="danamon_syariah">
+                        <option value="PT BANK DANAMON SYARIAH Tbk">
                           PT BANK DANAMON SYARIAH Tbk
                         </option>
-                        <option value="maybank_syariah">
+                        <option value="PT BANK MAYBANK SYARIAH Tbk">
                           PT BANK MAYBANK SYARIAH Tbk
                         </option>
                       </select>
@@ -1652,6 +2448,9 @@ const EditDataProfil = () => {
                       </label>
                       <input
                         type="text"
+                        name="nomor_rekening_bank"
+                        value={bankFormData.nomor_rekening_bank}
+                        onChange={handleBankChange}
                         className="w-full p-2 border rounded"
                       />
                     </div>
@@ -1659,7 +2458,12 @@ const EditDataProfil = () => {
                       <label className="block text-sm font-medium text-gray-700">
                         Jenis Rekening Bank
                       </label>
-                      <select className="w-full p-2 border rounded">
+                      <select
+                        name="jenis_rekening_bank"
+                        value={bankFormData.jenis_rekening_bank}
+                        onChange={handleBankChange}
+                        className="w-full p-2 border rounded"
+                      >
                         <option value="akun-bisnis">Akun Bisnis</option>
                         <option value="akun-pribadi">Akun Pribadi</option>
                       </select>
@@ -1668,7 +2472,12 @@ const EditDataProfil = () => {
                       <label className="block text-sm font-medium text-gray-700">
                         Nama Pemilik Bank
                       </label>
-                      <textarea className="w-full p-2 border rounded"></textarea>
+                      <textarea
+                        name="nama_pemilik_bank"
+                        value={bankFormData.nama_pemilik_bank}
+                        onChange={handleBankChange}
+                        className="w-full p-2 border rounded"
+                      ></textarea>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700">
@@ -1676,6 +2485,9 @@ const EditDataProfil = () => {
                       </label>
                       <input
                         type="date"
+                        name="tanggal_mulai"
+                        value={bankFormData.tanggal_mulai}
+                        onChange={handleBankChange}
                         className="w-full p-2 border rounded"
                       />
                     </div>
@@ -1685,6 +2497,9 @@ const EditDataProfil = () => {
                       </label>
                       <input
                         type="date"
+                        name="tanggal_berakhir"
+                        value={bankFormData.tanggal_berakhir}
+                        onChange={handleBankChange}
                         className="w-full p-2 border rounded"
                       />
                     </div>
@@ -1693,7 +2508,10 @@ const EditDataProfil = () => {
                     <AlertDialogCancel className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600">
                       Batal
                     </AlertDialogCancel>
-                    <AlertDialogAction className="bg-blue-900 text-white px-4 py-2 rounded-md hover:bg-blue-950">
+                    <AlertDialogAction
+                      onClick={() => createBankDetail.mutate()}
+                      className="bg-blue-900 text-white px-4 py-2 rounded-md hover:bg-blue-950"
+                    >
                       Simpan
                     </AlertDialogAction>
                   </AlertDialogFooter>
@@ -1723,18 +2541,207 @@ const EditDataProfil = () => {
                   </tr>
                 </thead>
                 <tbody className="text-gray-600">
-                  <tr className="bg-gray-100">
-                    <td className="px-1 py-4 border">
-                      <button className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-2 rounded">
-                        Edit
-                      </button>
-                    </td>
-                    <td className="px-4 py-4 border">Bank Syariah Indonesia</td>
-                    <td className="px-4 py-4 border">1234567890</td>
-                    <td className="px-4 py-4 border">Rekening Koran</td>
-                    <td className="px-4 py-4 border">01-01-2023</td>
-                    <td className="px-4 py-4 border">01-01-2023</td>
-                  </tr>
+                  {data.field_edit_informasi.detail_bank.map((bank) => (
+                    <tr className="bg-gray-100">
+                      <td className="px-1 py-4 border">
+                        <AlertDialog>
+                          <AlertDialogTrigger
+                            onClick={() => setBankFormData(bank)}
+                            className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-md"
+                          >
+                            Edit
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="bg-white !min-w-[1000px] rounded-lg shadow-lg ">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle className="text-xl font-bold">
+                                Tambahkan Tempat Kegiatan Baru
+                              </AlertDialogTitle>
+                            </AlertDialogHeader>
+                            <div className="grid gap-4 overflow-auto h-96">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700">
+                                  Bank *
+                                </label>
+                                <select
+                                  className="w-full p-2 border rounded"
+                                  name="nama_bank"
+                                  value={bankFormData.nama_bank}
+                                  onChange={handleBankChange}
+                                >
+                                  <option value="">Pilih Bank</option>
+                                  <option value="PT BANK MANDIRI (PERSERO) Tbk">
+                                    PT BANK MANDIRI (PERSERO) Tbk
+                                  </option>
+                                  <option value="PT BANK CENTRAL ASIA Tbk">
+                                    PT BANK CENTRAL ASIA Tbk
+                                  </option>
+                                  <option value="PT BANK RAKYAT INDONESIA (PERSERO) Tbk">
+                                    PT BANK RAKYAT INDONESIA (PERSERO) Tbk
+                                  </option>
+                                  <option value="PT BANK NEGARA INDONESIA (PERSERO) Tbk">
+                                    PT BANK NEGARA INDONESIA (PERSERO) Tbk
+                                  </option>
+                                  <option value="PT BANK BUKOPIN Tbk">
+                                    PT BANK BUKOPIN Tbk
+                                  </option>
+                                  <option value="PT BANK BTPN Tbk">
+                                    PT BANK BTPN Tbk
+                                  </option>
+                                  <option value="PT BANK CIMB NIAGA Tbk">
+                                    PT BANK CIMB NIAGA Tbk
+                                  </option>
+                                  <option value="PT BANK DANAMON Tbk">
+                                    PT BANK DANAMON Tbk
+                                  </option>
+                                  <option value="PT BANK MAYBANK Tbk">
+                                    PT BANK MAYBANK Tbk
+                                  </option>
+                                  <option value="PT BANK MEGA Tbk">
+                                    PT BANK MEGA Tbk
+                                  </option>
+                                  <option value="PT BANK PERMATA Tbk">
+                                    PT BANK PERMATA Tbk
+                                  </option>
+                                  <option value="PT BANK PANIN Tbk">
+                                    PT BANK PANIN Tbk
+                                  </option>
+                                  <option value="PT BANK PANIN SYARIAH Tbk">
+                                    PT BANK PANIN SYARIAH Tbk
+                                  </option>
+                                  <option value="PT BANK MAYBANK SYARIAH Tbk">
+                                    PT BANK MAYBANK SYARIAH Tbk
+                                  </option>
+                                  <option value="PT BANK SYARIAH INDONESIA Tbk">
+                                    PT BANK SYARIAH INDONESIA Tbk
+                                  </option>
+                                  <option value="PT BANK SYARIAH INDONESIA SYARIAH Tbk">
+                                    PT BANK SYARIAH INDONESIA SYARIAH Tbk
+                                  </option>
+                                  <option value="PT BANK CENTRAL ASIA SYARIAH Tbk">
+                                    PT BANK CENTRAL ASIA SYARIAH Tbk
+                                  </option>
+                                  <option value="PT BANK RAKYAT INDONESIA SYARIAH Tbk">
+                                    PT BANK RAKYAT INDONESIA SYARIAH Tbk
+                                  </option>
+                                  <option value="PT BANK NEGARA INDONESIA SYARIAH Tbk">
+                                    PT BANK NEGARA INDONESIA SYARIAH Tbk
+                                  </option>
+                                  <option value="PT BANK BUKOPIN SYARIAH Tbk">
+                                    PT BANK BUKOPIN SYARIAH Tbk
+                                  </option>
+                                  <option value="PT BANK BTPN SYARIAH Tbk">
+                                    PT BANK BTPN SYARIAH Tbk
+                                  </option>
+                                  <option value="PT BANK CIMB NIAGA SYARIAH Tbk">
+                                    PT BANK CIMB NIAGA SYARIAH Tbk
+                                  </option>
+                                  <option value="PT BANK DANAMON SYARIAH Tbk">
+                                    PT BANK DANAMON SYARIAH Tbk
+                                  </option>
+                                  <option value="PT BANK MAYBANK SYARIAH Tbk">
+                                    PT BANK MAYBANK SYARIAH Tbk
+                                  </option>
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700">
+                                  Nomor Rekening
+                                </label>
+                                <input
+                                  type="text"
+                                  name="nomor_rekening_bank"
+                                  value={bankFormData.nomor_rekening_bank}
+                                  onChange={handleBankChange}
+                                  className="w-full p-2 border rounded"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700">
+                                  Jenis Rekening Bank
+                                </label>
+                                <select
+                                  name="jenis_rekening_bank"
+                                  value={bankFormData.jenis_rekening_bank}
+                                  onChange={handleBankChange}
+                                  className="w-full p-2 border rounded"
+                                >
+                                  <option value="akun-bisnis">
+                                    Akun Bisnis
+                                  </option>
+                                  <option value="akun-pribadi">
+                                    Akun Pribadi
+                                  </option>
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700">
+                                  Nama Pemilik Bank
+                                </label>
+                                <textarea
+                                  name="nama_pemilik_bank"
+                                  value={bankFormData.nama_pemilik_bank}
+                                  onChange={handleBankChange}
+                                  className="w-full p-2 border rounded"
+                                ></textarea>
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700">
+                                  Tanggal Mulai
+                                </label>
+                                <input
+                                  type="date"
+                                  name="tanggal_mulai"
+                                  value={bankFormData.tanggal_mulai}
+                                  onChange={handleBankChange}
+                                  className="w-full p-2 border rounded"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700">
+                                  Tanggal Berakhir
+                                </label>
+                                <input
+                                  type="date"
+                                  name="tanggal_berakhir"
+                                  value={bankFormData.tanggal_berakhir}
+                                  onChange={handleBankChange}
+                                  className="w-full p-2 border rounded"
+                                />
+                              </div>
+                            </div>
+                            <AlertDialogFooter className="flex justify-end mt-6 space-x-2">
+                              <AlertDialogCancel className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600">
+                                Batal
+                              </AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => updateDetailBank.mutate(bank.id)}
+                                className="bg-blue-900 text-white px-4 py-2 rounded-md hover:bg-blue-950"
+                              >
+                                Simpan
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                        <button
+                          onClick={() => deleteDetailBank.mutate(bank.id)}
+                          className="bg-red-500 hover:bg-red-600 text-white py-2 px-2 rounded ml-2"
+                        >
+                          Hapus
+                        </button>
+                      </td>
+                      <td className="px-4 py-4 border">{bank.nama_bank}</td>
+                      <td className="px-4 py-4 border">
+                        {bank.nomor_rekening_bank}
+                      </td>
+                      <td className="px-4 py-4 border">
+                        {bank.jenis_rekening_bank}
+                      </td>
+                      <td className="px-4 py-4 border">{bank.tanggal_mulai}</td>
+                      <td className="px-4 py-4 border">
+                        {bank.tanggal_berakhir}
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>

@@ -22,6 +22,7 @@ export const getContracts = (url, cookie) =>
       return data.data;
     },
   });
+
 export const getOneContract = (url, cookie) =>
   useQuery({
     queryKey: [dashboard_const.contracts, url],

@@ -31,7 +31,8 @@ export default function MahasiswaPraktikum() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const [cookies, setCookie] = useCookies(["user"]);
-  const [url, setUrl] = useState(`${RoutesApi.url}api/student/assignments`);
+  // const [url, setUrl] = useState(`${RoutesApi.url}api/student/assignments`);
+  const [url, setUrl] = useState(`${RoutesApi.url}api/student/assignment-user`);
 
   const { isLoading, isError, data, error, refetch } = useQuery({
     queryKey: ["praktikum", url],
@@ -239,17 +240,30 @@ export default function MahasiswaPraktikum() {
                 <td>{item.group.teacher}</td>
                 {/* <td>{item.dosen.name}</td> */}
                 <td>{item.name}</td>
+                {/* <td>{item.assignment.group.name}</td> */}
+                {/* <td></td> */}
+                {/* <td>{item.assignment.dosen.name}</td> */}
+                {/* <td>{item.assignment.name}</td> */}
                 {/* <td className="max-w-5">
-                  <p className="truncate">{item.assignment_code}</p>
+                  <p className="truncate">{item.assignment.assignment_code}</p>
                 </td> */}
                 <td className="max-w-5">
-                  <p className="">{item.end_period}</p>
+                  <p className="">{item.assignment.end_period}</p>
                 </td>
                 <td>
                   <button
                     className="action-button"
+                    // onClick={() => {
+                    //   startPraktikum.mutate(item.id);
+                    // }}
                     onClick={() => {
-                      startPraktikum.mutate(item.id);
+                      if (item.is_start === 1) {
+                        // If already started, redirect directly
+                        window.location.href = `/praktikum/${item.id}`;
+                      } else {
+                        // If not started, call the mutation to start
+                        startPraktikum.mutate(item.id);
+                      }
                     }}
                   >
                     Mulai

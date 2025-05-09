@@ -17,7 +17,7 @@ import {
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { Button } from "@/components/ui/button";
-import { RoutesApi } from "@/Routes";
+// import { RoutesApi as RoutesApiReal } from "@/Routes";
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -37,9 +37,8 @@ import { useParams } from "react-router";
 import { ClipLoader } from "react-spinners";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import Swal from "sweetalert2";
-import Select from "react-select";
 
-const TambahFakturKeluaran = ({ data, sidebar }) => {
+const EditFakturKeluaran = ({ sidebar }) => {
   const [editMode, setEditMode] = useState(false);
   const [editingTransaksiId, setEditingTransaksiId] = useState(null);
 
@@ -73,8 +72,10 @@ const TambahFakturKeluaran = ({ data, sidebar }) => {
   const [ppnbm, setPPnBM] = useState("Rp 0");
   const [isCustomPPnBM, setIsCustomPPnBM] = useState(false);
 
-  const { id, akun } = useParams();
+  const { id, akun, faktur } = useParams();
   const [cookies] = useCookies(["token"]);
+
+  // alert(faktur);
 
   const RoutesApi = {
     kodeTransaksi: "http://127.0.0.1:8000/api/kode-transaksi",
@@ -100,11 +101,30 @@ const TambahFakturKeluaran = ({ data, sidebar }) => {
   };
 
   const {
-    data: npwp_faktur,
-    isLoading,
-    isError,
-    error,
+    data: fakturData,
+    isLoading: fakturLoading,
+    isError: fakturError,
+    error: fakturErrorDetails,
   } = useQuery({
+    queryKey: ["faktur_detail", akun],
+    queryFn: async () => {
+      const { data } = await axios.get(
+        `${RoutesApiReal.apiUrl}student/assignments/${id}/sistem/${akun}/faktur/${faktur}`,
+        {
+          headers: {
+            Authorization: `Bearer ${cookies.token}`,
+            Accept: "application/json",
+          },
+          params: {
+            // intent: "api.get.sistem.ikhtisar.profil",
+          },
+        }
+      );
+      return data.data;
+    },
+  });
+
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ["npwp_faktur"],
     queryFn: async () => {
       const data = await axios.get(
@@ -346,9 +366,60 @@ const TambahFakturKeluaran = ({ data, sidebar }) => {
     nama: "",
     email: "",
     detail_transaksi: [],
-    alamat: "",
-    negara: "",
   });
+
+  useEffect(() => {
+    if (fakturData && !fakturLoading) {
+      // Populate formData with the fetched faktur data
+      setFormData({
+        uangMuka: fakturData.uangMuka || false,
+        pelunasan: fakturData.pelunasan || false,
+        nomorFaktur: fakturData.nomorFaktur || "",
+        kode_transaksi: fakturData.kode_transaksi || "",
+        tanggal_faktur_pajak: fakturData.tanggal_faktur_pajak || "",
+        jenisFaktur: fakturData.jenisFaktur || "Normal",
+        esign_status: fakturData.esign_status || "Belum Ditandatangani",
+        masa_pajak: fakturData.masa_pajak || "",
+        tahun: fakturData.tahun || new Date().getFullYear().toString(),
+        informasi_tambahan: fakturData.informasi_tambahan || "",
+        cap_fasilitas: fakturData.cap_fasilitas || "",
+        nomorPendukung: fakturData.nomorPendukung || "",
+        referensi: fakturData.referensi || "",
+        alamat: fakturData.alamat || "",
+        idtku: fakturData.idtku || "000000",
+        akun_penerima_id: fakturData.akun_penerima_id || "",
+        identification: fakturData.identification || "",
+        negara: fakturData.negara || "",
+        nomorDokumen: fakturData.nomorDokumen || "",
+        nama: fakturData.nama || "",
+        email: fakturData.email || "",
+        detail_transaksi: fakturData.detail_transaksi || [],
+      });
+
+      // Also update other state variables that are used in the form
+      if (
+        fakturData.detail_transaksi &&
+        fakturData.detail_transaksi.length > 0
+      ) {
+        setSavedTransaksi(fakturData.detail_transaksi);
+      }
+
+      // Set other form-related states
+      setInformasiTambahan(fakturData.informasi_tambahan || "");
+      setCapFasilitas(fakturData.cap_fasilitas || "");
+      setNomorPendukung(fakturData.nomorPendukung || "");
+      setKodeTransaksi(fakturData.kode_transaksi || "");
+
+      // Set the year if available
+      if (fakturData.tahun) {
+        const year = parseInt(fakturData.tahun);
+        if (!isNaN(year)) {
+          setSelectedYear(new Date(year, 0));
+          setTahunString(fakturData.tahun);
+        }
+      }
+    }
+  }, [fakturData, fakturLoading]);
 
   const [namaBarang, setNamaBarang] = useState("");
 
@@ -492,6 +563,28 @@ const TambahFakturKeluaran = ({ data, sidebar }) => {
     setEditingTransaksiId(null);
   };
 
+  const handleCancelEdit = () => {
+    setEditMode(false);
+    setEditingTransaksiId(null);
+
+    // Reset form fields
+    setTipe("");
+    setNamaBarang("");
+    setSelectedKode("");
+    setSelectedSatuan("");
+    setHarga("Rp 0");
+    setKuantitas(0);
+    setTotalHarga("Rp 0");
+    setPotonganHarga("Rp 0");
+    setDPP("Rp 0");
+    setJumlah("Rp 0");
+    setTarifPPN("Rp 0");
+    setTarifPPnBM("");
+    setPPnBM("Rp 0");
+    setIsChecked(false);
+    setIsCustomPPnBM(false);
+  };
+
   const handleHapusTransaksi = (id) => {
     const updatedTransaksi = savedTransaksi.filter((item) => item.id !== id);
 
@@ -530,27 +623,6 @@ const TambahFakturKeluaran = ({ data, sidebar }) => {
       document.querySelector(".AlertDialogTrigger").click();
     }
   };
-  const handleCancelEdit = () => {
-    setEditMode(false);
-    setEditingTransaksiId(null);
-
-    // Reset form fields
-    setTipe("");
-    setNamaBarang("");
-    setSelectedKode("");
-    setSelectedSatuan("");
-    setHarga("Rp 0");
-    setKuantitas(0);
-    setTotalHarga("Rp 0");
-    setPotonganHarga("Rp 0");
-    setDPP("Rp 0");
-    setJumlah("Rp 0");
-    setTarifPPN("Rp 0");
-    setTarifPPnBM("");
-    setPPnBM("Rp 0");
-    setIsChecked(false);
-    setIsCustomPPnBM(false);
-  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -559,12 +631,12 @@ const TambahFakturKeluaran = ({ data, sidebar }) => {
       [name]: type === "checkbox" ? checked : value,
     }));
   };
-
-  const createFaktur = useMutation({
-    mutationFn: async ({ data, isDraft }) => {
+  const createDraftFaktur = useMutation({
+    mutationFn: async (data) => {
       const csrf = await getCsrf();
-      return axios.post(
-        `${RoutesApiReal.url}api/student/assignments/${id}/sistem/${akun}/faktur`,
+      return axios.put(
+        `${RoutesApiReal.url}api/student/assignments/${id}/sistem/${akun}/faktur/${faktur}`,
+        // `${RoutesApiReal.url}api/student/assignments/${id}/sistem/${akun}/faktur`,
         data,
         {
           headers: {
@@ -573,33 +645,28 @@ const TambahFakturKeluaran = ({ data, sidebar }) => {
             "X-CSRF-TOKEN": csrf,
             Authorization: `Bearer ${cookies.token}`,
           },
-          params: {
-            intent: isDraft
-              ? "api.create.faktur.draft"
-              : "api.create.faktur.fix",
-          },
+          // params: {
+          //   intent: "api.create.faktur.draft",
+          // },
         }
       );
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (data) => {
       console.log(data);
-      const successMessage = variables.isDraft
-        ? "Draft Faktur berhasil dibuat"
-        : "Faktur berhasil diupload";
-
-      Swal.fire("Berhasil!", successMessage, "success").then((result) => {
-        if (result.isConfirmed) {
-          window.location.href = `/praktikum/${id}/sistem/${akun}/e-faktur/pajak-keluaran`;
+      Swal.fire("Berhasil!", "Draft Faktur berhasil dibuat", "success").then(
+        (result) => {
+          if (result.isConfirmed) {
+            window.location.reload();
+          }
         }
-      });
+      );
     },
     onError: (error) => {
       console.error("Error saving data:", error);
       Swal.fire("Gagal!", "Terjadi kesalahan saat menyimpan data.", "error");
     },
   });
-
-  const handleSubmit = (e, isDraft = true) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
 
     // Validasi apakah ada detail transaksi
@@ -610,31 +677,36 @@ const TambahFakturKeluaran = ({ data, sidebar }) => {
 
     // Hitung total DPP, PPN, dan PPnBM dari semua transaksi
     const totalDPP = formData.detail_transaksi.reduce((sum, item) => {
+      //   return sum + (parseInt(item.dpp.replace(/\D/g, ""), 10) || 0);
       return sum + item.dpp;
     }, 0);
 
     const totalPPN = formData.detail_transaksi.reduce((sum, item) => {
+      //   return sum + (parseInt(item.ppnNominal.replace(/\D/g, ""), 10) || 0);
       return sum + item.ppnNominal;
     }, 0);
 
     const totalPPnBM = formData.detail_transaksi.reduce((sum, item) => {
+      //   return sum + (parseInt(item.ppnbm.replace(/\D/g, ""), 10) || 0);
       return sum + item.ppnbm;
     }, 0);
 
     // Tambahkan total ke formData
     const finalFormData = {
       ...formData,
-      dpp: totalDPP,
-      ppn: totalPPN,
-      ppnbm: totalPPnBM,
+      akun_penerima_id: formData.akun_penerima_id.id,
+      dpp: parseInt(totalDPP),
+      ppn: parseInt(totalPPN),
+      ppnbm: parseInt(totalPPnBM),
       informasi_tambahan: informasi_tambahan,
       cap_fasilitas: cap_fasilitas,
-      akun_penerima_id:
-        formData.akun_penerima_id?.id || formData.akun_penerima_id,
+
+      //   totalTagihan: formatRupiah((totalDPP + totalPPN + totalPPnBM).toString()),
     };
+    // alert(finalFormData)
 
     console.log(finalFormData);
-    createFaktur.mutate({ data: finalFormData, isDraft });
+    createDraftFaktur.mutate(finalFormData);
   };
 
   const handleSimpan = () => {
@@ -698,7 +770,7 @@ const TambahFakturKeluaran = ({ data, sidebar }) => {
         case "24":
           return "24 - (Tidak ada Cap)";
         case "25":
-          return "25 - PPN tidak dipungut berdasarkan PP Nomor 49 Tahun 2022";
+          return "25 - PPN tidak dipungut berdasarkan PP Nomor 49 Taakun_penerima_id.nama_akunhun 2022";
         case "26":
           return "26 - PPN tidak dipungut berdasarkan PP Nomor 12 Tahun 2023";
         case "27":
@@ -735,11 +807,6 @@ const TambahFakturKeluaran = ({ data, sidebar }) => {
     return "";
   };
 
-  const options = listKode.map((item) => ({
-    value: item.kode,
-    label: `${item.kode} - ${item.nama_transaksi}`,
-  }));
-
   if (isLoading) {
     return (
       <div className="loading">
@@ -749,7 +816,7 @@ const TambahFakturKeluaran = ({ data, sidebar }) => {
     );
   }
 
-  console.log(npwp_faktur);
+  console.log(fakturData);
 
   return (
     console.log(""),
@@ -773,7 +840,7 @@ const TambahFakturKeluaran = ({ data, sidebar }) => {
             {showDokumenTransaksi ? <FaChevronUp /> : <FaChevronDown />}
           </div>
           {showDokumenTransaksi && (
-            <div className="border rounded-md p-4 mb-2 grid grid-cols-3 gap-4 w-[1200px]">
+            <div className="border rounded-md p-4 mb-2 grid grid-cols-3 gap-4 w-full">
               <div className="space-y-2">
                 <label className="block text-sm font-medium">Uang Muka</label>
                 <input
@@ -1380,32 +1447,15 @@ const TambahFakturKeluaran = ({ data, sidebar }) => {
                 <label className="block text-sm font-medium">NPWP </label>
                 <select
                   name="akun_penerima_id"
-                  value={formData.akun_penerima_id}
-                  // onChange={handleChange}
-                  onChange={(e) => {
-                    const selectedId = e.target.value;
-                    const selectedItem = npwp_faktur.data.find(
-                      (item) => item.id.toString() == selectedId
-                    );
-
-                    console.log(selectedItem);
-
-                    setFormData((prev) => ({
-                      ...prev,
-                      akun_penerima_id: selectedItem?.id,
-                      nama: selectedItem?.nama_akun || "",
-                      alamat: selectedItem?.alamat_utama_akun || "",
-                      negara: selectedItem?.negara_asal,
-                      email: selectedItem?.email_akun,
-                    }));
-                  }}
+                  value={formData.akun_penerima_id.id}
+                  onChange={handleChange}
                   className="p-2 border rounded w-full"
                 >
                   <option value="">Pilih NPWP</option>
                   {!isLoading &&
-                    npwp_faktur &&
-                    npwp_faktur.data.map((item, index) => (
-                      <option key={index} value={item.id}>
+                    data &&
+                    data.map((item, index) => (
+                      <option key={index} value={item.id || ""}>
                         {item.npwp_akun || "NPWP tidak tersedia"} -{" "}
                         {item.nama_akun}
                       </option>
@@ -1443,8 +1493,7 @@ const TambahFakturKeluaran = ({ data, sidebar }) => {
                   name="negara"
                   value={formData.negara}
                   onChange={handleChange}
-                  className="p-2 border rounded w-full bg-gray-100"
-                  readOnly
+                  className="p-2 border rounded w-full"
                 />
               </div>
               <div className="space-y-2">
@@ -1465,11 +1514,9 @@ const TambahFakturKeluaran = ({ data, sidebar }) => {
                 <input
                   type="text"
                   name="nama"
-                  // value={formData.akun_penerima_id.nama_akun}
-                  value={formData.nama}
+                  value={formData.akun_penerima_id.nama_akun}
                   onChange={handleChange}
-                  className="p-2 border rounded w-full bg-gray-100"
-                  disabled
+                  className="p-2 border rounded w-full"
                 />
               </div>
               <div className="space-y-2">
@@ -1479,8 +1526,9 @@ const TambahFakturKeluaran = ({ data, sidebar }) => {
                   name="alamat"
                   value={formData.alamat}
                   onChange={handleChange}
-                  className="p-2 border rounded w-full bg-gray-100"
+                  className="p-2 border rounded w-full"
                   disabled
+                  placeholder="Ngelink kang"
                 />
               </div>
               <div className="space-y-2">
@@ -1500,8 +1548,7 @@ const TambahFakturKeluaran = ({ data, sidebar }) => {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className="p-2 border rounded w-full bg-gray-100"
-                  disabled
+                  className="p-2 border rounded w-full"
                 />
               </div>
             </div>
@@ -1514,7 +1561,7 @@ const TambahFakturKeluaran = ({ data, sidebar }) => {
             {showDetailTransaksi ? <FaChevronUp /> : <FaChevronDown />}
           </div>
           {showDetailTransaksi && (
-            <div className="border rounded-md p-4 mb-2 w-[1200px]">
+            <div className="border rounded-md p-4 mb-2 w-full">
               <div className="flex justify-between mb-4 border-b pb-3">
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
@@ -1525,7 +1572,7 @@ const TambahFakturKeluaran = ({ data, sidebar }) => {
                   <AlertDialogContent className="bg-white rounded-md shadow-md p-4 !min-w-[1000px]">
                     <AlertDialogHeader className="text-lg font-semibold ">
                       <AlertDialogTitle className="text-lg font-semibold border-b pb-2 w-full">
-                        Tambah Transaksi
+                        {editMode ? "Edit Transaksi" : "Tambah Transaksi"}
                       </AlertDialogTitle>
                     </AlertDialogHeader>
                     <div className="grid grid-cols-2 gap-6 w-full overflow-auto h-96">
@@ -1564,26 +1611,21 @@ const TambahFakturKeluaran = ({ data, sidebar }) => {
                         </div>
                         {tipe && (
                           <div>
-                            <label className="block text-sm font-medium mb-1">
+                            <label className="block text-sm font-medium">
                               Kode Transaksi
                             </label>
-                            <div className="w-full">
-                              <Select
-                                options={options}
-                                value={options.find(
-                                  (opt) => opt.value === selectedKode
-                                )}
-                                onChange={(selected) =>
-                                  setSelectedKode(selected?.value || "")
-                                }
-                                styles={{
-                                  menu: (provided) => ({
-                                    ...provided,
-                                    width: "full",
-                                  }),
-                                }}
-                              />
-                            </div>
+                            <select
+                              className="p-2 border rounded w-[250px] max-w-full"
+                              value={selectedKode}
+                              onChange={(e) => setSelectedKode(e.target.value)}
+                            >
+                              <option value="">Pilih Kode Transaksi</option>
+                              {listKode.map((item) => (
+                                <option key={item.id} value={item.kode}>
+                                  {item.kode} - {item.nama_transaksi}
+                                </option>
+                              ))}
+                            </select>
                           </div>
                         )}
 
@@ -1605,7 +1647,7 @@ const TambahFakturKeluaran = ({ data, sidebar }) => {
                               Satuan
                             </label>
                             <select
-                              className="p-2 border rounded w-full max-w-full"
+                              className="p-2 border rounded w-[250px] max-w-full"
                               value={selectedSatuan}
                               onChange={(e) =>
                                 setSelectedSatuan(e.target.value)
@@ -1894,25 +1936,14 @@ const TambahFakturKeluaran = ({ data, sidebar }) => {
             </div>
           )}
           <div className="flex justify-end mt-4 gap-3">
-            <button
-              onClick={() =>
-                (window.location.href = `/praktikum/${id}/sistem/${akun}/e-faktur/pajak-keluaran`)
-              }
-              className="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded"
-            >
+            <button className="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded">
               Batal
             </button>
             <button
-              onClick={(e) => handleSubmit(e, true)}
+              onClick={handleSubmit}
               className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded"
             >
-              Simpan Draft
-            </button>
-            <button
-              onClick={(e) => handleSubmit(e, false)}
-              className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded"
-            >
-              Upload Faktur
+              Simpan
             </button>
           </div>
         </div>
@@ -1921,4 +1952,4 @@ const TambahFakturKeluaran = ({ data, sidebar }) => {
   );
 };
 
-export default TambahFakturKeluaran;
+export default EditFakturKeluaran;

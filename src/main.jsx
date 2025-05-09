@@ -18,12 +18,12 @@ const queryClient = new QueryClient();
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     {/* <BrowserRouter> */}
-    <UserTypeProvider>
-      <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={queryClient}>
+      <UserTypeProvider>
         <App />
         <Toaster />
-      </QueryClientProvider>
-    </UserTypeProvider>
+      </UserTypeProvider>
+    </QueryClientProvider>
 
     {/* <Routes>
         <Route path="/" element={<App />} />
